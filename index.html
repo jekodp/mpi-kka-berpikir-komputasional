@@ -13,9 +13,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MPI BK">
 
-    <!-- Ikon & logo (sementara). Ganti file di assets/icon/ dengan logo resmi, nama file tetap sama -->
+    <!-- Ikon & logo aplikasi (berkasnya di assets/icon/) -->
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png">
-    <link rel="icon" type="image/svg+xml" href="assets/icon/logo.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icon/icon-192.png">
     <link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
 
     <link rel="stylesheet" href="css/style.css">
@@ -38,7 +38,6 @@
     <div id="landscape-warning">
         <div class="warning-content">
             <svg viewBox="0 0 24 24" width="80" height="80" fill="white">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" opacity="0" /> <!-- Placeholder, kita pakai CSS saja untuk membuat icon HP berputar yang lebih mudah -->
                 <path d="M16 1H8C6.34 1 5 2.34 5 4v16c0 1.66 1.34 3 3 3h8c1.66 0 3-1.34 3-3V4c0-1.66-1.34-3-3-3zm1 19c0 .55-.45 1-1 1H8c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h8c.55 0 1 .45 1 1v16z"/>
             </svg>
             <h2>Mohon Putar HP Anda</h2>
@@ -47,22 +46,10 @@
     </div>
 
     <div id="app-container">
-        <header style="display: none;">
-            <h1>Berpikir Komputasional</h1>
-            <div id="progress-bar-container">
-                <div id="progress-bar"></div>
-            </div>
-        </header>
-        
         <main id="content-area">
             <!-- Konten halaman akan dimuat di sini oleh JavaScript -->
         </main>
 
-        <footer style="display: none;">
-            <button id="btn-prev" class="btn" disabled>Sebelumnya</button>
-            <span id="page-indicator">Halaman 1</span>
-            <button id="btn-next" class="btn">Selanjutnya</button>
-        </footer>
     </div>
     <script src="js/dialogueData.js"></script>
     <script src="js/materiData.js"></script>

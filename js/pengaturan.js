@@ -27,8 +27,6 @@ function pengaturanRingkasan() {
 }
 
 function renderPengaturan() {
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
     document.body.className = 'theme-dark';

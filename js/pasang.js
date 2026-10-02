@@ -1,6 +1,6 @@
 // =====================================================================
 // PANDUAN INSTAL APLIKASI (mode "Tambahkan ke Layar Utama" / PWA)
-// - Tombol "Instal" di pojok kanan atas Menu Utama, tampil di semua
+// - Tombol "Instal" di pojok kanan atas halaman Sampul, tampil di semua
 //   perangkat SELAMA website dibuka lewat browser. Disembunyikan bila
 //   sedang dibuka dari ikon aplikasi (pasti sudah terpasang).
 // - Sorotan (spotlight) ke tombol itu muncul SEKALI saja.
@@ -57,11 +57,11 @@ function pasangPerluDitawarkan() {
 // Dibuka dari ikon: catat tandanya (di Android/laptop penyimpanan dipakai bersama browser)
 if (pasangSudahTerpasang()) pasangSetTanda(true);
 
-// ---------- TOMBOL DI MENU UTAMA & SPOTLIGHT ----------
-// Dipanggil setiap kali Menu Utama selesai digambar (lihat renderMainMenu di app.js)
-function pasangSetelahMenu() {
+// ---------- TOMBOL DI HALAMAN SAMPUL & SPOTLIGHT ----------
+// Dipanggil setiap kali halaman Sampul selesai digambar (lihat renderCover di app.js)
+function pasangSetelahSampul() {
     if (!pasangPerluDitawarkan()) return;
-    const root = document.querySelector('.main-menu-container');
+    const root = document.querySelector('.cover-container');
     if (!root || document.getElementById('btn-pasang')) return;
     const btn = document.createElement('button');
     btn.id = 'btn-pasang';
@@ -76,12 +76,12 @@ function pasangSetelahMenu() {
     const ujianBerjalan = (typeof simulasiAktif === 'function') && simulasiAktif();
     if (!sudah && !ujianBerjalan) {
         const coba = (sisa) => setTimeout(() => {
-            // Pastikan masih di Menu Utama (murid belum pindah halaman)
+            // Pastikan masih di halaman Sampul (murid belum menekan "Mulai")
             if (document.getElementById('btn-pasang') !== btn || document.querySelector('.pasang-spot')) return;
             // Kanvas tersembunyi saat HP tegak: ukuran tombol terbaca 0, jadi tunggu sampai HP mendatar
             if (!btn.offsetHeight) { if (sisa > 0) coba(sisa - 1); return; }
             pasangTampilSpotlight(btn);
-        }, 1100);
+        }, 1600);
         coba(120);
     }
 }
@@ -119,10 +119,10 @@ function pasangTampilSpotlight(btn) {
     spot.querySelector('.pasang-nanti').addEventListener('click', (e) => { e.stopPropagation(); tutup(); });
     spot.querySelector('.pasang-lihat').addEventListener('click', (e) => { e.stopPropagation(); tutup(); bukaPanduanPasang(); });
     spot.querySelector('.pasang-spot-lubang').addEventListener('click', (e) => { e.stopPropagation(); tutup(); bukaPanduanPasang(); });
-    spot.addEventListener('click', (e) => e.stopPropagation());   // menu di belakang tidak ikut tersentuh
+    spot.addEventListener('click', (e) => e.stopPropagation());   // halaman di belakang tidak ikut tersentuh
 }
 
-// ---------- ISI PANDUAN (dipakai di jendela panduan & halaman Tentang) ----------
+// ---------- ISI PANDUAN (dipakai di jendela panduan) ----------
 const PASANG_IKON_SHARE = '<span class="pasang-ikon"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3l-4 4h3v8h2V7h3l-4-4zM5 10v10h14V10h-2v8H7v-8H5z" fill="currentColor"/></svg></span>';
 const PASANG_IKON_TITIK = '<span class="pasang-ikon">&#8942;</span>';
 const PASANG_IKON_INSTAL = '<span class="pasang-ikon"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4 4h16v11H4zM2 17h20v2H2zM12 6v5.2l2.1-2.1 1.4 1.4L12 14l-3.5-3.5 1.4-1.4 2.1 2.1V6z" fill="currentColor"/></svg></span>';
@@ -268,8 +268,6 @@ const tentangData = {
 };
 
 function renderTentang() {
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
     document.body.className = 'theme-dark';

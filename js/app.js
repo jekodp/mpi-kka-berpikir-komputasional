@@ -1,75 +1,23 @@
 // Data State Aplikasi Lokal
 const appState = {
-    currentView: 'menu', 
-    currentModuleIndex: 0,
-    currentPageIndex: 0,
-    progress: {} 
+    currentView: 'menu',
+    currentModuleIndex: 0
 };
 
-// --- SILABUS / MATERI ---
+// --- DAFTAR MENU UTAMA ---
+// Isi tiap menu digambar oleh fungsinya sendiri (lihat renderMateriPage).
 const modules = [
-    {
-        id: 'mulai_belajar',
-        title: 'Mulai Belajar',
-        pages: [
-            {
-                title: 'Mulai Belajar',
-                content: '<h2>Mulai Belajar</h2><p>Materi Berpikir Komputasional akan ditampilkan di sini.</p>'
-            }
-        ]
-    },
-    {
-        id: 'cek_kisi',
-        title: 'Cek Kisi-Kisi',
-        pages: [
-            {
-                title: 'Kisi-Kisi',
-                content: '<h2>Kisi-Kisi</h2><p>Berikut adalah kisi-kisi materi...</p>'
-            }
-        ]
-    },
-    {
-        id: 'simulasi_asts',
-        title: 'Simulasi ASTS',
-        pages: [
-            {
-                title: 'Simulasi ASTS',
-                content: '<h2>Simulasi ASTS</h2><p>Silakan mulai simulasi ujian.</p>'
-            }
-        ]
-    },
-    {
-        id: 'pengaturan',
-        title: 'Pengaturan',
-        pages: [
-            {
-                title: 'Pengaturan',
-                content: ''
-            }
-        ]
-    },
-    {
-        id: 'tentang',
-        title: 'Tentang',
-        pages: [
-            {
-                title: 'Tentang Aplikasi',
-                content: '<h2>Tentang Aplikasi</h2><p>Media Pembelajaran Interaktif (MPI) Berpikir Komputasional v1.0</p>'
-            }
-        ]
-    }
+    { id: 'mulai_belajar', title: 'Mulai Belajar' },
+    { id: 'cek_kisi', title: 'Cek Kisi-Kisi' },
+    { id: 'simulasi_asts', title: 'Simulasi ASTS' },
+    { id: 'pengaturan', title: 'Pengaturan' },
+    { id: 'tentang', title: 'Tentang' }
 ];
 
 // --- FUNGSI UTAMA ---
 
 const elements = {
-    header: document.querySelector('header'),
-    footer: document.querySelector('footer'),
-    contentArea: document.getElementById('content-area'),
-    btnPrev: document.getElementById('btn-prev'),
-    btnNext: document.getElementById('btn-next'),
-    pageIndicator: document.getElementById('page-indicator'),
-    progressBar: document.getElementById('progress-bar')
+    contentArea: document.getElementById('content-area')
 };
 
 function initApp() {
@@ -77,8 +25,6 @@ function initApp() {
     
     // Paksa selalu kembali ke menu utama setiap kali halaman di-refresh/dibuka baru
     appState.currentView = 'menu';
-
-    setupEventListeners();
 
     // Jika masih ada Simulasi ASTS yang berlangsung, langsung kunci ke ujian (js/simulasi.js)
     if (typeof simulasiCekSaatMuat === 'function' && simulasiCekSaatMuat()) { tandaiAplikasiSiap(); return; }
@@ -145,8 +91,6 @@ function pemuatanDaftarGambar() {
 
 function renderPemuatan(setelahSelesai) {
     document.body.classList.remove('theme-light', 'theme-dark');
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
 
@@ -279,8 +223,6 @@ const COVER = {
 
 function renderCover() {
     document.body.classList.remove('theme-light', 'theme-dark');
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
 
@@ -299,6 +241,9 @@ function renderCover() {
     document.getElementById('btn-cover-mulai').addEventListener('click', () => {
         navigateWithTransition(() => renderView());
     });
+
+    // Tombol "Instal" + sorotan sekali di kunjungan pertama (js/pasang.js)
+    if (typeof pasangSetelahSampul === 'function') pasangSetelahSampul();
 
     // Sampul baru ditampilkan setelah gambarnya siap (atau gagal dimuat), supaya tidak berkedip
     let sudah = false;
@@ -485,7 +430,6 @@ function tampilKunciModul(index) {
         window.lastMenuIndex = tujuanIdx;
         navigateWithTransition(() => {
             appState.currentModuleIndex = tujuanIdx;
-            appState.currentPageIndex = 0;
             appState.currentView = 'materi';
             renderView();
         });
@@ -589,8 +533,6 @@ document.addEventListener('keydown', (e) => {
 
 function renderMainMenu() {
     document.body.classList.remove('theme-light', 'theme-dark');
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     
     // Hilangkan padding bawaan agar menu bisa merapat penuh ke kiri
     elements.contentArea.style.padding = '0';
@@ -643,8 +585,6 @@ function renderMainMenu() {
     menuSlideReset();
     elements.contentArea.innerHTML = menuHTML;
 
-    // Tombol "Instal" + sorotan sekali di kunjungan pertama (js/pasang.js)
-    if (typeof pasangSetelahMenu === 'function') pasangSetelahMenu();
 
     const bukaModul = (index) => {
         if (kunciModul(index)) { tampilKunciModul(index); return; }
@@ -653,7 +593,6 @@ function renderMainMenu() {
         window.lastMenuIndex = index;
         navigateWithTransition(() => {
             appState.currentModuleIndex = index;
-            appState.currentPageIndex = 0;
             appState.currentView = 'materi';
             renderView();
         });
@@ -933,85 +872,25 @@ function renderMateriPage() {
         return;
     }
 
-    elements.header.style.display = 'block';
-    elements.footer.style.display = 'flex';
-
-    // Kembalikan padding normal untuk halaman materi
-    elements.contentArea.style.padding = '20px';
-    elements.contentArea.style.overflowY = 'auto';
-
-    const currentModule = modules[appState.currentModuleIndex];
-    const page = currentModule.pages[appState.currentPageIndex];
-    
-    elements.contentArea.innerHTML = 
-        '<button id="btn-back-menu" class="btn-secondary" style="margin-bottom: 20px;">&#8592; Kembali</button>' +
-        '<div class="page-content">' + page.content + '</div>';
-    
-    document.getElementById('btn-back-menu').addEventListener('click', () => {
-        navigateWithTransition(() => {
-            appState.currentView = 'menu';
-            renderView();
-        });
-    });
-
-    document.querySelector('header h1').innerText = currentModule.title;
-    
-    elements.pageIndicator.innerText = 'Halaman ' + (appState.currentPageIndex + 1) + ' dari ' + currentModule.pages.length;
-    
-    const progressPercent = ((appState.currentPageIndex + 1) / currentModule.pages.length) * 100;
-    elements.progressBar.style.width = progressPercent + '%';
-
-    elements.btnPrev.disabled = (appState.currentPageIndex === 0);
-    
-    if (appState.currentPageIndex === currentModule.pages.length - 1) {
-        elements.btnNext.innerText = 'Selesai';
-    } else {
-        elements.btnNext.innerText = 'Selanjutnya';
-    }
-    
-    saveProgress();
-}
-
-function setupEventListeners() {
-    elements.btnNext.addEventListener('click', () => {
-        const currentModule = modules[appState.currentModuleIndex];
-        if (appState.currentPageIndex < currentModule.pages.length - 1) {
-            appState.currentPageIndex++;
-            renderView();
-        } else {
-            alert('Selamat! Murid telah menyelesaikan modul ini.');
-            appState.currentView = 'menu';
-            renderView();
-        }
-    });
-
-    elements.btnPrev.addEventListener('click', () => {
-        if (appState.currentPageIndex > 0) {
-            appState.currentPageIndex--;
-            renderView();
-        }
-    });
+    // Menu tidak dikenal: kembali ke Menu Utama
+    appState.currentView = 'menu';
+    renderMainMenu();
 }
 
 function saveProgress() {
-    localStorage.setItem('mpi_bk_progress', JSON.stringify(appState));
+    try { localStorage.setItem('mpi_bk_progress', JSON.stringify(appState)); } catch (e) { /* penyimpanan tidak tersedia */ }
 }
 
 function loadProgress() {
-    const saved = localStorage.getItem('mpi_bk_progress');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            appState.currentView = parsed.currentView || 'menu';
-            appState.currentModuleIndex = parsed.currentModuleIndex || 0;
-            appState.currentPageIndex = parsed.currentPageIndex || 0;
-            appState.vnProgress = parsed.vnProgress || 0;
-            appState.vnLastIndex = parsed.vnLastIndex || 0;
-            appState.progress = parsed.progress || {};
-            appState.kisiChecks = parsed.kisiChecks || {}; // daftar cek kompetensi di Cek Kisi-Kisi
-        } catch (e) {
-            console.error('Gagal memuat progres lokal', e);
-        }
+    try {
+        const saved = localStorage.getItem('mpi_bk_progress');
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        appState.vnProgress = parsed.vnProgress || 0;
+        appState.vnLastIndex = parsed.vnLastIndex || 0;
+        appState.kisiChecks = parsed.kisiChecks || {}; // daftar cek kompetensi di Cek Kisi-Kisi
+    } catch (e) {
+        console.error('Gagal memuat progres lokal', e);
     }
 }
 
@@ -1020,20 +899,33 @@ document.addEventListener('contextmenu', event => event.preventDefault());
 
 document.addEventListener('copy', event => {
     event.preventDefault();
-    alert('Maaf, menyalin materi tidak diizinkan.');
+    pesanAplikasi('&#128274;', 'Tidak bisa disalin', 'Maaf, menyalin materi tidak diizinkan.');
 });
+
+// Kotak pesan buatan sendiri di tengah layar (pengganti alert bawaan browser).
+// Ditempel ke kanvas, jadi bisa dipakai di halaman mana pun. Hanya satu yang tampil pada satu waktu.
+function pesanAplikasi(ikon, judul, teks, tombol) {
+    const kanvas = document.getElementById('app-container');
+    if (!kanvas || kanvas.querySelector('.pesan-aplikasi')) return null;
+    const wrap = document.createElement('div');
+    wrap.className = 'sim-modal-backdrop pesan-aplikasi';
+    wrap.innerHTML = `<div class="sim-modal">
+            ${ikon ? `<div class="sim-modal-icon">${ikon}</div>` : ''}
+            <h3>${judul}</h3>
+            <p>${teks}</p>
+            <button class="btn-primary sim-modal-btn">${tombol || 'Oke'}</button>
+        </div>`;
+    kanvas.appendChild(wrap);
+    wrap.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' });
+    wrap.querySelector('.sim-modal').animate([{ transform: 'scale(0.92)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }],
+        { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+    const tutup = () => wrap.remove();
+    wrap.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); tutup(); });
+    wrap.addEventListener('click', (e) => { e.stopPropagation(); if (e.target === wrap) tutup(); });
+    return wrap;
+}
 
 document.addEventListener('cut', event => event.preventDefault());
-
-// Menonaktifkan sementara blokir Screenshot untuk keperluan perbaikan (sesuai permintaan)
-/*
-document.addEventListener('keyup', (e) => {
-    if (e.key === 'PrintScreen') {
-        navigator.clipboard.writeText('');
-        alert('Maaf, mengambil tangkapan layar (screenshot) tidak diizinkan.');
-    }
-});
-*/
 
 window.addEventListener('wheel', function(e) {
     if (e.ctrlKey || e.metaKey) {
@@ -1164,11 +1056,21 @@ const VN_EKSPRESI_CADANGAN = {
 };
 // Ekspresi yang memang diwakili gambar dasar (tidak perlu dicari filenya)
 const VN_EKSPRESI_DASAR = { kevin: 'tanya', kayana: 'senyum' };
+// Ekspresi yang GAMBARNYA BELUM DIBUAT. Selama namanya ada di sini, filenya tidak dicari
+// (supaya tidak ada permintaan gambar yang gagal) dan langsung dipakai cadangannya di atas,
+// atau gambar dasar kevin/kayana bila tidak punya cadangan.
+// Cara melengkapi kelak: taruh filenya di assets/karakter/ (mis. kayana_mengajak.webp),
+// lalu HAPUS namanya dari daftar ini. Rinciannya ada di CATATAN_PENGEMBANGAN.md.
+const VN_EKSPRESI_BELUM_ADA = {
+    kevin:  ['menjabarkan', 'tertawa', 'bingung'],
+    kayana: ['mengajak', 'tegas', 'memancing', 'heran', 'melambai']
+};
 
 function vnCalonEkspresi(karakter, ekspresi) {
     if (!ekspresi || ekspresi === VN_EKSPRESI_DASAR[karakter]) return [karakter];
     const cadangan = (VN_EKSPRESI_CADANGAN[karakter] || {})[ekspresi] || [];
-    return [ekspresi].concat(cadangan).map(e => `${karakter}_${e}`).concat([karakter]);
+    const belumAda = VN_EKSPRESI_BELUM_ADA[karakter] || [];
+    return [ekspresi].concat(cadangan).filter(e => !belumAda.includes(e)).map(e => `${karakter}_${e}`).concat([karakter]);
 }
 // Mencari gambar pertama yang tersedia dari daftar calon (hasilnya diingat agar tidak dicari ulang)
 const vnEkspresiTerpilih = {};
@@ -1219,36 +1121,6 @@ function vnEkspresiTerakhir(nama, sampaiIndex) {
     return null;
 }
 
-function loadVNAsset(elementId, baseName, isCharacter = false) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    
-    el.innerText = '';
-
-    cariAset(baseName, (src) => {
-        el.style.backgroundImage = `url('${src}')`;
-    }, () => {
-        {
-            // Jika semua format gagal
-            el.style.backgroundImage = 'none';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            
-            if (isCharacter) {
-                el.innerText = `[Karakter: ${baseName}]`;
-                el.style.color = '#fff';
-                el.style.backgroundColor = 'rgba(255,255,255,0.2)';
-            } else {
-                el.innerText = `[Latar: ${baseName}]`;
-                el.style.color = 'rgba(255,255,255,0.7)';
-                el.style.fontSize = '1.5rem';
-                el.style.fontWeight = 'bold';
-            }
-        }
-    });
-}
-
 let vnCurrentIndex = 0;
 let vnKuis = null;                // hasil kuis terakhir: { index, sempatSalah }
 let vnIsTyping = false;
@@ -1270,8 +1142,6 @@ function startVisualNovel() {
 }
 
 function renderChapterSelect() {
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
 
@@ -1510,7 +1380,7 @@ function renderChapterSelect() {
                             listPanel.style.transform = 'translateX(-100%)';
                             listPanel.style.opacity = '0';
                         }
-                        const btnBack = document.getElementById('btn-back-main');
+                        const btnBack = document.getElementById('btn-back-menu');
                         if (btnBack) {
                             btnBack.style.transition = 'opacity 0.3s ease';
                             btnBack.style.opacity = '0';
@@ -1607,8 +1477,6 @@ function tampilkanMateriBab(bab) {
 
 function renderVNEngine() {
     window.vnPreviousSpeaker = null;
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
 
@@ -1759,13 +1627,25 @@ function vnLompatKe(index) {
 
 function playVNDialogue() {
     if (vnCurrentIndex >= dialogData.length) {
-        if (!modeDev() && (appState.vnProgress || 0) <= vnChapters.length) {
+        vnAutoBatal();
+        const tamatPertama = !modeDev() && (appState.vnProgress || 0) <= vnChapters.length;
+        if (tamatPertama) {
             appState.vnProgress = vnChapters.length + 1;
             saveProgress();
         }
-        alert('Selamat! Kamu telah menyelesaikan petualangan Berpikir Komputasional! Menu Cek Kisi-Kisi sekarang sudah terbuka.');
-        appState.currentView = 'menu';
-        renderView();
+        const wadahCerita = document.querySelector('.vn-container');
+        if (wadahCerita) wadahCerita.onclick = null;
+        navigateWithTransition(() => {
+            if (!tamatPertama) { renderChapterSelect(); return; }   // baca ulang: kembali ke daftar bab
+            window.lastMenuIndex = modules.findIndex(m => m.id === 'cek_kisi');
+            appState.currentView = 'menu';
+            renderView();
+            if (typeof simModal === 'function') simModal(`
+                <div class="sim-modal-icon">&#127881;</div>
+                <h3>Selamat, semua materi selesai!</h3>
+                <p>Kamu sudah menuntaskan cerita Berpikir Komputasional. Menu <b>Cek Kisi-Kisi</b> sekarang terbuka.</p>
+                <button class="btn-primary sim-modal-btn" data-aksi="tutup">Oke</button>`, true);
+        });
         return;
     }
 
@@ -1997,7 +1877,6 @@ function playVNDialogue() {
 
     const data = dialogData[vnCurrentIndex];
     const container = document.querySelector('.vn-container');
-    const quizOverlay = document.getElementById('vn-quiz-overlay');
     const textEl = document.getElementById('vn-text');
     const speakerEl = document.getElementById('vn-speaker');
     const indicator = document.getElementById('vn-next-indicator');

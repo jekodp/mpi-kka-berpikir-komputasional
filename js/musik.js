@@ -115,7 +115,8 @@ function musikLaguHalaman() {
     const c = root.classList;
     if (c.contains('muat-container') || c.contains('cover-container')) return null;   // sebelum "Mulai": senyap
     if (typeof simulasiAktif === 'function' && simulasiAktif()) return null;          // ujian berlangsung: senyap
-    if (c.contains('chapter-select-container') || c.contains('vn-container')) return 'cerita';
+    // Di layar dialog, anak pertama kanvas adalah tombol Kembali, jadi wadah dialog dicari langsung
+    if (c.contains('chapter-select-container') || elements.contentArea.querySelector(':scope > .vn-container')) return 'cerita';
     return 'menu';
 }
 function musikCekHalaman() {

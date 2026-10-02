@@ -27,7 +27,12 @@ function simSave(key, val) {
 }
 function simulasiAktif() {
     const s = simLoad(SIM_KEY, null);
-    return !!(s && s.status === 'active');
+    if (!s || s.status !== 'active') return false;
+    if (typeof simulasiSoal !== 'undefined' && !simDataCocok(s)) {
+        try { localStorage.removeItem(SIM_KEY); } catch (e) { /* abaikan */ }
+        return false;
+    }
+    return true;
 }
 // Waktu "sekarang" yang tidak bisa mundur (pengaman jika jam perangkat dimundurkan)
 function simNow(s) { return Math.max(Date.now(), s.lastSeen || 0); }
@@ -69,6 +74,11 @@ function simAcak(arr) {
     return a;
 }
 function simSoalById(id) { return simulasiSoal.find(q => q.id === id); }
+// Sesi/hasil yang tersimpan bisa berasal dari versi soal yang lama. Bila ada nomor soal yang
+// sudah tidak ada, data itu dianggap tidak berlaku supaya halaman tidak macet.
+function simDataCocok(d) {
+    return !!(d && Array.isArray(d.order) && d.order.length && d.order.every(id => simSoalById(id)));
+}
 function simNamaMateri(kode) {
     const m = (typeof kisiMateri !== 'undefined') ? kisiMateri.find(x => x.kode === kode) : null;
     return m ? m.nama : kode;
@@ -163,8 +173,6 @@ function renderSimulasi() {
 }
 
 function simSiapkanHalaman() {
-    elements.header.style.display = 'none';
-    elements.footer.style.display = 'none';
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
     document.body.className = 'theme-dark';
@@ -489,7 +497,7 @@ function simMulaiTimer() {
 
 // ---------- POP-UP & MODAL ----------
 function simModal(html, bisaDitutup) {
-    const root = elements.contentArea.firstElementChild;
+    const root = elements.contentArea.querySelector(':scope > div') || elements.contentArea;
     const wrap = document.createElement('div');
     wrap.className = 'sim-modal-backdrop';
     wrap.innerHTML = `<div class="sim-modal">${html}</div>`;
@@ -567,7 +575,7 @@ function simKumpulkan(otomatis, tanpaTampilan) {
     const riwayat = simLoad(SIM_RIWAYAT, []);
     riwayat.push({ nilai: nilai, tanggal: selesai });
     simSave(SIM_RIWAYAT, riwayat);
-    localStorage.removeItem(SIM_KEY);   // kunci menu dibuka lagi
+    try { localStorage.removeItem(SIM_KEY); } catch (e) { /* abaikan */ }   // kunci menu dibuka lagi
     document.querySelectorAll('.sim-modal-layarpenuh').forEach(x => x.remove());
     if (!st.layarPenuhAwal) simKeluarLayarPenuh();   // kembali seperti sebelum simulasi
 
@@ -588,7 +596,7 @@ function simKumpulkan(otomatis, tanpaTampilan) {
 function renderSimulasiHasil() {
     simSiapkanHalaman();
     const h = simLoad(SIM_HASIL, null);
-    if (!h) { renderSimulasiAwal(); return; }
+    if (!simDataCocok(h)) { renderSimulasiAwal(); return; }
     const riwayat = simLoad(SIM_RIWAYAT, []);
     const terbaik = riwayat.length ? Math.max(...riwayat.map(r => r.nilai)) : h.nilai;
 
@@ -692,18 +700,16 @@ function renderSimulasiHasil() {
 function renderSimulasiPembahasan(idx) {
     simSiapkanHalaman();
     const h = simLoad(SIM_HASIL, null);
-    if (!h) { renderSimulasiAwal(); return; }
+    if (!simDataCocok(h)) { renderSimulasiAwal(); return; }
     const id = h.order[idx];
     const q = simSoalById(id);
     const jawaban = h.answers[id] || [];
     const poin = h.poin[id];
     const status = simStatus(q, jawaban, poin);
     const label = { benar: 'Benar', sebagian: `Sebagian &middot; ${simAngka(poin)} poin`, salah: 'Salah', kosong: 'Tidak dijawab' };
-    const huruf = ['A', 'B', 'C', 'D', 'E', 'F'];
-
     // Di pembahasan, pilihan ditampilkan sesuai urutan asli kartu soal (A–E),
     // supaya huruf kunci dan isi pembahasan ("Opsi B benar ...") cocok.
-    const opsiHTML = q.opsi.map((o, i) => {
+    const opsiHTML = q.opsi.map((o) => {
         const oid = o.id;
         const kunci = q.kunci.includes(oid), pilih = jawaban.includes(oid);
         let kelas = '', tanda = '';
