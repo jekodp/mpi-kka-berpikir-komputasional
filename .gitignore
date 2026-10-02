@@ -1,0 +1,14 @@
+# File dan folder yang tidak ikut diunggah ke GitHub.
+# Semuanya tetap ada di komputer, hanya tidak masuk ke repository.
+
+# Cadangan kode versi lama (tidak dipakai aplikasi)
+_backup_sebelum_perbaikan/
+
+# Foto asli ukuran penuh (aplikasi memakai assets/pengembang.jpg)
+assets/profile.jpg
+
+# File bawaan sistem dan editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
