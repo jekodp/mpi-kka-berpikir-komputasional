@@ -256,7 +256,15 @@ const tentangData = {
         sekolah: 'SMA Negeri 5 Mataram',
         mapel: 'Informatika dan KKA',
         email: 'achmad5511@guru.sma.belajar.id'
-    }
+    },
+    // Keterbukaan pemakaian AI: [bagian, alat yang dipakai]
+    ai: [
+        ['Gambar', ['Nano Banana (Gemini)', 'ChatGPT']],
+        ['Musik', ['Gemini']],
+        ['Kode aplikasi', ['Claude']],
+        ['Naskah dan materi', ['Gemini', 'Claude']]
+    ],
+    aiPeran: 'Konsep, isi pelajaran, pemilihan hasil, dan pemeriksaan akhir dilakukan oleh pengembang.'
 };
 
 function renderTentang() {
@@ -267,45 +275,59 @@ function renderTentang() {
     document.body.className = 'theme-dark';
 
     const d = tentangData, p = d.pengembang;
-    const materiHTML = d.materi.map(([label, isi]) =>
-        `<div class="tentang-item"><span>${label}</span><b>${isi}</b></div>`).join('');
+    const ikonMateri = ['&#128218;', '&#127891;', '&#129513;', '&#127919;'];
+    const materiHTML = d.materi.map(([label, isi], i) =>
+        `<div class="tt-item"><i>${ikonMateri[i] || ''}</i><span>${label}</span><b>${isi}</b></div>`).join('');
+    const aiHTML = d.ai.map(([bagian, alat]) =>
+        `<div class="tt-ai-baris"><span>${bagian}</span><div>${alat.map(x => `<em>${x}</em>`).join('')}</div></div>`).join('');
 
+    // Tata letak "bento": lima ubin dengan ukuran berbeda, masing-masing satu topik
     elements.contentArea.innerHTML = `
-        <div class="sim-container">
-            <div class="sim-side">
+        <div class="tt-container">
+            <div class="tt-kepala">
                 <button id="btn-back-menu" class="glass-btn kisi-back-btn">&#8592; Menu Utama</button>
                 <h2 class="sim-judul">Tentang</h2>
-                <p class="kisi-subjudul">${kisiInfo.mapel} &middot; ${kisiInfo.kelas}</p>
-                <div class="tentang-app">
-                    <img src="assets/icon/icon-192.png" alt="Logo MPI BK">
-                    <h3>MPI Berpikir Komputasional</h3>
-                    <p>Media Pembelajaran Interaktif untuk belajar Berpikir Komputasional lewat dialog, kisi-kisi, dan simulasi ASTS.</p>
-                    <span class="kisi-chip" id="tentang-versi">Versi 1.0</span>
-                </div>
             </div>
-            <div class="tentang-kanan">
-                <section class="tentang-kartu">
-                    <h3 class="tentang-judul">&#128218; Identitas Materi</h3>
-                    <div class="tentang-grid">${materiHTML}</div>
-                    <div class="tentang-tujuan">
-                        <span>Tujuan Pembelajaran</span>
-                        <p>${d.tujuan}</p>
+            <div class="tt-grid">
+                <section class="tt-ubin tt-hero">
+                    <div class="tt-hero-bg" id="tt-hero-bg"></div>
+                    <div class="tt-hero-isi">
+                        <img src="assets/icon/icon-192.png" alt="Logo MPI BK">
+                        <span class="tt-label">Media Pembelajaran Interaktif</span>
+                        <h3>Berpikir<br><em>Komputasional</em></h3>
+                        <p>Belajar lewat cerita Kevin dan Kayana, cek kisi-kisi, lalu uji diri di simulasi ASTS.</p>
+                        <span class="kisi-chip" id="tentang-versi">Versi 1.0</span>
                     </div>
                 </section>
-                <section class="tentang-kartu">
-                    <h3 class="tentang-judul">&#128100; Identitas Pengembang</h3>
-                    <div class="tentang-dev">
-                        <img class="tentang-foto" src="${p.foto}" alt="Foto ${p.nama}">
-                        <div class="tentang-dev-isi">
-                            <h4>${p.nama}</h4>
-                            <div class="tentang-dev-baris"><span>Sekolah</span><b>${p.sekolah}</b></div>
-                            <div class="tentang-dev-baris"><span>Mata Pelajaran yang Diampu</span><b>${p.mapel}</b></div>
-                            <div class="tentang-dev-baris"><span>Email</span><a href="mailto:${p.email}">${p.email}</a></div>
+                <section class="tt-ubin tt-materi">
+                    <h4 class="tt-judul">Identitas Materi</h4>
+                    <div class="tt-materi-grid">${materiHTML}</div>
+                </section>
+                <section class="tt-ubin tt-tujuan">
+                    <span class="tt-kutip">&ldquo;</span>
+                    <h4 class="tt-judul">Tujuan Pembelajaran</h4>
+                    <p>${d.tujuan}</p>
+                </section>
+                <section class="tt-ubin tt-ai">
+                    <h4 class="tt-judul">&#10024; Dibuat dengan bantuan AI</h4>
+                    ${aiHTML}
+                    <p>${d.aiPeran}</p>
+                </section>
+                <section class="tt-ubin tt-dev">
+                    <img class="tentang-foto" src="${p.foto}" alt="Foto ${p.nama}">
+                    <div class="tt-dev-isi">
+                        <h4 class="tt-judul">Pengembang</h4>
+                        <h3>${p.nama}</h3>
+                        <div class="tt-dev-chip">
+                            <span>&#127979; ${p.sekolah}</span>
+                            <span>&#128187; Guru ${p.mapel}</span>
                         </div>
+                        <a class="tt-email" href="mailto:${p.email}">&#9993; ${p.email}</a>
                     </div>
                 </section>
             </div>
         </div>`;
+    cariAset('cover', (src) => { const bg = document.getElementById('tt-hero-bg'); if (bg) bg.style.backgroundImage = `url('${src}')`; });
 
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });

@@ -15,9 +15,13 @@ const PENGATURAN_RESET_OK = 'mpi_bk_reset_berhasil';   // sessionStorage: tampil
 function pengaturanRingkasan() {
     const b = progresBelajar();
     const k = progresKisi();
-    let percobaan = 0;
-    try { percobaan = JSON.parse(localStorage.getItem('mpi_bk_simulasi_riwayat') || '[]').length; } catch (e) { /* abaikan */ }
-    return { b, k, percobaan };
+    let percobaan = 0, terbaik = null;
+    try {
+        const riwayat = JSON.parse(localStorage.getItem('mpi_bk_simulasi_riwayat') || '[]');
+        percobaan = riwayat.length;
+        riwayat.forEach(x => { if (typeof x.nilai === 'number' && (terbaik === null || x.nilai > terbaik)) terbaik = x.nilai; });
+    } catch (e) { /* abaikan */ }
+    return { b, k, percobaan, terbaik };
 }
 
 function renderPengaturan() {
@@ -30,54 +34,56 @@ function renderPengaturan() {
     const r = pengaturanRingkasan();
     const kosong = r.b.done === 0 && r.k.done === 0 && r.percobaan === 0;
 
+    // Cincin progres (SVG): persen 0..100
+    const cincin = (persen, warna, tengah) => {
+        const k = 2 * Math.PI * 34;
+        return `<svg viewBox="0 0 84 84" class="at-cincin"><circle cx="42" cy="42" r="34" class="at-cincin-latar"/>
+            <circle cx="42" cy="42" r="34" stroke="${warna}" stroke-dasharray="${k}" stroke-dashoffset="${k * (1 - Math.min(100, Math.max(0, persen)) / 100)}" class="at-cincin-isi"/>
+            <text x="42" y="47" text-anchor="middle">${tengah}</text></svg>`;
+    };
+    const pB = r.b.total ? r.b.done / r.b.total * 100 : 0;
+    const pK = r.k.total ? r.k.done / r.k.total * 100 : 0;
+    const nilai = r.terbaik === null ? null : Math.round(r.terbaik);
+
+    // Tata letak "bento", sama dengan halaman Tentang
     elements.contentArea.innerHTML = `
-        <div class="sim-container">
-            <div class="sim-side">
+        <div class="tt-container">
+            <div class="tt-kepala">
                 <button id="btn-back-menu" class="glass-btn kisi-back-btn">&#8592; Menu Utama</button>
                 <h2 class="sim-judul">Pengaturan</h2>
-                <p class="kisi-subjudul">Atur aplikasi sesuai kebutuhanmu</p>
             </div>
-            <div class="atur-kanan">
-                <section class="tentang-kartu atur-kartu atur-segera" ${modeDev() ? 'style="display:none"' : ''}>
-                    <div class="atur-kepala">
-                        <h3 class="tentang-judul">&#128100; Profil Siswa</h3>
-                        <span class="atur-chip">Segera hadir</span>
-                    </div>
-                    <div class="atur-baris">
-                        <div><b>Nama Panggilan</b><span>Tokoh di materi akan memanggilmu dengan nama ini.</span></div>
-                        <div class="atur-isian">&mdash;</div>
-                    </div>
-                    <div class="atur-baris">
-                        <div><b>Gender</b><span>Menentukan siapa pemandu materimu: Kevin atau Kayana.</span></div>
-                        <div class="atur-isian">&mdash;</div>
+            <div class="tt-grid at-grid">
+                <section class="tt-ubin at-musik">
+                    ${typeof musikKartuHTML === 'function' ? musikKartuHTML() : ''}
+                </section>
+
+                <section class="tt-ubin at-progres">
+                    <h4 class="tt-judul">Progresmu</h4>
+                    <div class="at-progres-baris">
+                        <div class="at-stat">${cincin(pB, '#3498db', Math.round(pB) + '%')}<div><b>Mulai Belajar</b><span>${r.b.done} dari ${r.b.total} bab selesai</span></div></div>
+                        <div class="at-stat">${cincin(pK, '#e67e22', Math.round(pK) + '%')}<div><b>Cek Kisi-Kisi</b><span>${r.k.done} dari ${r.k.total} kompetensi</span></div></div>
+                        <div class="at-stat">${cincin(nilai === null ? 0 : nilai, '#2ecc71', nilai === null ? '&ndash;' : nilai)}<div><b>Simulasi ASTS</b><span>${r.percobaan ? `Nilai terbaik dari ${r.percobaan} percobaan` : 'Belum pernah dicoba'}</span></div></div>
                     </div>
                 </section>
 
                 ${modeDev() ? `
-                <section class="tentang-kartu atur-kartu atur-dev">
-                    <div class="atur-kepala">
-                        <h3 class="tentang-judul">&#128736; Mode Developer</h3>
-                        <span class="atur-chip atur-chip-dev">Aktif</span>
-                    </div>
-                    <p class="atur-ket">Semua menu dan bab terbuka, dan navigasi bab selalu tampil. Progres asli tidak diubah.</p>
-                    <div class="atur-aksi">
-                        <label class="atur-centang"><input type="checkbox" id="dev-lewati" ${devLewatiPembuka() ? 'checked' : ''}> Lewati layar pemuatan dan sampul</label>
-                        <button id="dev-matikan" class="atur-reset-btn atur-dev-btn">Matikan</button>
-                    </div>
-                </section>` : ''}
+                <section class="tt-ubin at-dev">
+                    <div class="at-kepala"><h4 class="tt-judul">&#128736; Mode Developer</h4><span class="at-lencana hijau">Aktif</span></div>
+                    <p class="at-ket">Semua menu dan bab terbuka, dan navigasi bab selalu tampil. Progres asli tidak diubah.</p>
+                    <label class="atur-centang"><input type="checkbox" id="dev-lewati" ${devLewatiPembuka() ? 'checked' : ''}> Lewati layar pemuatan dan sampul</label>
+                    <button id="dev-matikan" class="at-tombol hijau">Matikan mode developer</button>
+                </section>` : `
+                <section class="tt-ubin at-profil">
+                    <div class="at-kepala"><h4 class="tt-judul">&#128100; Profil Siswa</h4><span class="at-lencana">Segera hadir</span></div>
+                    <div class="at-profil-baris"><i>&#128172;</i><div><b>Nama Panggilan</b><span>Kevin dan Kayana akan memanggilmu dengan nama ini.</span></div></div>
+                    <div class="at-profil-baris"><i>&#127917;</i><div><b>Pemandu</b><span>Pilih siapa yang memandumu: Kevin atau Kayana.</span></div></div>
+                </section>`}
 
-                <section class="tentang-kartu atur-kartu atur-bahaya">
-                    <h3 class="tentang-judul">&#8634; Reset ke Keadaan Awal</h3>
-                    <p class="atur-ket">Menghapus semua data belajarmu di perangkat ini, lalu aplikasi dimulai lagi dari awal seperti pertama kali dibuka.</p>
-                    <div class="atur-data">
-                        <div><span>Mulai Belajar</span><b>${r.b.done}<i>/${r.b.total} bab</i></b></div>
-                        <div><span>Cek Kisi-Kisi</span><b>${r.k.done}<i>/${r.k.total} kompetensi</i></b></div>
-                        <div><span>Simulasi ASTS</span><b>${r.percobaan}<i> percobaan</i></b></div>
-                    </div>
-                    <div class="atur-aksi">
-                        <span class="atur-catatan">${kosong ? 'Belum ada data belajar yang tersimpan.' : '&#9888; Data yang sudah dihapus tidak bisa dikembalikan.'}</span>
-                        <button id="atur-reset" class="atur-reset-btn">Reset Semua Data</button>
-                    </div>
+                <section class="tt-ubin at-reset">
+                    <h4 class="tt-judul">&#8634; Mulai dari Awal</h4>
+                    <p class="at-ket">Menghapus semua data belajarmu di perangkat ini. Aplikasi kembali seperti pertama kali dibuka.</p>
+                    <span class="at-catatan">${kosong ? 'Belum ada data belajar yang tersimpan.' : '&#9888; Data yang dihapus tidak bisa dikembalikan.'}</span>
+                    <button id="atur-reset" class="at-tombol merah">Reset Semua Data</button>
                 </section>
             </div>
         </div>`;
@@ -86,6 +92,7 @@ function renderPengaturan() {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });
     });
     document.getElementById('atur-reset').addEventListener('click', pengaturanKonfirmasiReset);
+    if (typeof musikPasangKartu === 'function') musikPasangKartu();
 
     const devMati = document.getElementById('dev-matikan');
     if (devMati) {

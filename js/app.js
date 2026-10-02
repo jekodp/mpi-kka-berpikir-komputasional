@@ -1539,6 +1539,7 @@ function renderVNEngine() {
 
     const vnHTML = 
         '<button id="btn-back-menu" class="btn-secondary" style="position: absolute; top: 20px; left: 20px; z-index: 100;">&#8592; Kembali</button>' +
+        vnAlatHTML() +
         '<div id="vn-progress-dots" class="vn-nav"></div>' +
         '<div class="vn-container">' +
             '<div id="vn-bg"></div>' +
@@ -1596,9 +1597,11 @@ function renderVNEngine() {
 
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         clearTimeout(vnTypewriterTimeout);
+        vnAutoBatal();
         if (window.vnSplashTimeout) clearTimeout(window.vnSplashTimeout);
         navigateWithTransition(() => renderChapterSelect());
     });
+    vnPasangAlat();
 
     if (!lanjutTengahBab) { playVNDialogue(); return; }
 
@@ -1667,6 +1670,7 @@ function vnPasangGeserNavigasi(nav, startIdx) {
 // Melompat ke baris tertentu lewat navigasi bab (hanya tersedia di bab yang sudah selesai)
 function vnLompatKe(index) {
     clearTimeout(vnTypewriterTimeout);
+    vnAutoBatal();
     if (window.vnSplashTimeout) clearTimeout(window.vnSplashTimeout);
     const container = document.querySelector('.vn-container');
     if (container) { container.onclick = null; container.classList.remove('quiz-mode', 'chapter-transition'); }
@@ -2030,9 +2034,11 @@ function playVNDialogue() {
         } else {
             vnIsTyping = false;
             indicator.style.display = 'block';
+            vnSelesaiKetik(teksBaris, data.isMateri);
         }
     }
     clearTimeout(vnTypewriterTimeout);
+    vnAutoBatal();
 
     if (isFirstLine) {
         dialogBox.style.transition = 'none';
@@ -2060,18 +2066,148 @@ function playVNDialogue() {
     // Event Klik untuk Lanjut atau Skip animasi ngetik
     container.onclick = (e) => {
         if(e.target.className === 'vn-quiz-btn' || e.target.id === 'btn-back-menu') return;
+        vnAutoBatal();
         
         if (vnIsTyping) {
             clearTimeout(vnTypewriterTimeout);
             textEl.innerText = teksBaris;
             vnIsTyping = false;
             indicator.style.display = 'block';
+            vnSelesaiKetik(teksBaris, data.isMateri);
         } else {
             container.onclick = null; // hapus event agar tidak dobel
             vnCurrentIndex++;
             playVNDialogue();
         }
     };
+}
+
+// =====================================================================
+// ALAT KECIL DI LAYAR DIALOG (pojok kanan atas)
+// - Auto  : dialog maju sendiri. Lama jeda mengikuti panjang kalimat, dan
+//           baris materi inti diberi waktu lebih. Kuis tetap menunggu
+//           jawaban murid. Ketukan layar tetap berfungsi seperti biasa.
+//           Pilihan ini diingat di perangkat.
+// - Volume: penggeser volume dan tombol bisu untuk musik latar (sama
+//           dengan pemutar di menu Pengaturan). Di iPhone volume diatur
+//           lewat tombol fisik, jadi tombol ini hanya menyalakan/mematikan.
+// =====================================================================
+const VN_AUTO_KEY = 'mpi_bk_auto';
+let vnAuto = false;
+try { vnAuto = localStorage.getItem(VN_AUTO_KEY) === '1'; } catch (e) { /* abaikan */ }
+let vnAutoTimer = null;
+let vnAutoTunggu = null;          // { ms } bila ada baris yang sudah selesai diketik dan menunggu dilanjutkan
+
+const VN_IKON = {
+    auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5v13l8.5-6.5zM12.5 5.5v13L21 12z" fill="currentColor"/></svg>',
+    suara: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path d="M15 9a4.2 4.2 0 0 1 0 6M17.6 6.4a8 8 0 0 1 0 11.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+    bisu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>'
+};
+
+function vnAlatHTML() {
+    return '<div id="vn-vol-tirai" class="vn-vol-tirai"></div>' +
+        '<div id="vn-alat" class="vn-alat">' +
+            '<button id="vn-auto" type="button" class="btn-secondary vn-alat-btn" aria-pressed="false" title="Dialog lanjut otomatis">' + VN_IKON.auto + '<span>Auto</span></button>' +
+            '<button id="vn-vol" type="button" class="btn-secondary vn-alat-btn ikon" aria-label="Volume musik" aria-expanded="false" title="Volume musik"></button>' +
+            '<div id="vn-vol-panel" class="vn-vol-panel">' +
+                '<button id="vn-vol-bisu" type="button" aria-label="Bisukan atau nyalakan musik"></button>' +
+                '<input type="range" id="vn-vol-geser" min="0" max="100" step="1" aria-label="Volume musik">' +
+                '<span id="vn-vol-angka"></span>' +
+            '</div>' +
+        '</div>';
+}
+
+function vnAutoBatal() {
+    clearTimeout(vnAutoTimer);
+    vnAutoTimer = null;
+    vnAutoTunggu = null;
+    const b = document.getElementById('vn-auto');
+    if (b) b.classList.remove('menunggu');
+}
+
+// Dipanggil setiap kali sebuah baris (atau tanggapan kuis) selesai tampil seluruhnya
+function vnSelesaiKetik(teks, materi) {
+    const ms = Math.min(8000, Math.max(1000, 500 + (teks || '').length * 30));
+    vnAutoTunggu = { ms: Math.round(ms * (materi ? 1.5 : 1)) };
+    vnAutoJadwal();
+}
+
+function vnAutoJadwal() {
+    clearTimeout(vnAutoTimer);
+    vnAutoTimer = null;
+    const b = document.getElementById('vn-auto');
+    if (b) b.classList.remove('menunggu');
+    if (!vnAuto || !vnAutoTunggu || !b) return;
+    // Ditahan selama panel volume terbuka atau tab tidak terlihat; dijadwalkan lagi sesudahnya
+    if (document.hidden || document.getElementById('vn-alat').classList.contains('panel-buka')) return;
+    const ms = vnAutoTunggu.ms;
+    b.style.setProperty('--auto-ms', ms + 'ms');
+    void b.offsetWidth;                         // mengulang animasi garis tunggu dari awal
+    b.classList.add('menunggu');
+    vnAutoTimer = setTimeout(() => {
+        const c = document.querySelector('.vn-container');
+        if (!c || !c.onclick || vnIsTyping) return;
+        c.onclick({ target: c });               // sama seperti murid mengetuk layar
+    }, ms);
+}
+document.addEventListener('visibilitychange', vnAutoJadwal);
+
+function vnPasangAlat() {
+    const alat = document.getElementById('vn-alat');
+    if (!alat) return;
+    const bAuto = document.getElementById('vn-auto');
+    const bVol = document.getElementById('vn-vol');
+    const tirai = document.getElementById('vn-vol-tirai');
+    const bBisu = document.getElementById('vn-vol-bisu');
+    const geser = document.getElementById('vn-vol-geser');
+    const angka = document.getElementById('vn-vol-angka');
+    const adaMusik = typeof musik !== 'undefined';
+
+    const perbarui = () => {
+        bAuto.classList.toggle('nyala', vnAuto);
+        bAuto.setAttribute('aria-pressed', vnAuto ? 'true' : 'false');
+        const v = adaMusik ? Math.round(musik.volume * 100) : 0;
+        const bisu = !adaMusik || !musik.nyala || v === 0;
+        bVol.innerHTML = bisu ? VN_IKON.bisu : VN_IKON.suara;
+        bVol.classList.toggle('bisu', bisu);
+        bBisu.innerHTML = bisu ? VN_IKON.bisu : VN_IKON.suara;
+        if (document.activeElement !== geser) geser.value = v;
+        geser.style.setProperty('--isi', (adaMusik && musik.nyala ? geser.value : 0) + '%');
+        angka.innerText = adaMusik && musik.nyala ? geser.value : 'Mati';
+    };
+    const tutupPanel = () => {
+        if (!alat.classList.contains('panel-buka')) return;
+        alat.classList.remove('panel-buka');
+        tirai.classList.remove('tampil');
+        bVol.setAttribute('aria-expanded', 'false');
+        vnAutoJadwal();
+    };
+
+    bAuto.addEventListener('click', () => {
+        vnAuto = !vnAuto;
+        try { vnAuto ? localStorage.setItem(VN_AUTO_KEY, '1') : localStorage.removeItem(VN_AUTO_KEY); } catch (e) { /* abaikan */ }
+        perbarui();
+        vnAutoJadwal();
+    });
+    bVol.addEventListener('click', () => {
+        if (!adaMusik) return;
+        // iPhone: volume tidak bisa diubah halaman web, jadi tombol ini langsung bisu/nyala
+        if (!musik.volumeBisaDiatur) { musikAturNyala(!musik.nyala); perbarui(); return; }
+        if (alat.classList.contains('panel-buka')) { tutupPanel(); return; }
+        alat.classList.add('panel-buka');
+        tirai.classList.add('tampil');
+        bVol.setAttribute('aria-expanded', 'true');
+        vnAutoJadwal();                         // menahan auto selama panel terbuka
+    });
+    tirai.addEventListener('click', tutupPanel);
+    bBisu.addEventListener('click', () => { musikAturNyala(!musik.nyala); perbarui(); });
+    geser.addEventListener('input', () => {
+        const v = geser.value / 100;
+        if (v > 0 && !musik.nyala) musikAturNyala(true);
+        musikAturVolume(v);
+        perbarui();
+    });
+    perbarui();
 }
 
 function showFeedback(feedbackText, isCorrect, teksSoal) {
@@ -2098,18 +2234,22 @@ function showFeedback(feedbackText, isCorrect, teksSoal) {
         } else {
             vnIsTyping = false;
             indicator.style.display = 'block';
+            vnSelesaiKetik(feedbackText);
         }
     }
     clearTimeout(vnTypewriterTimeout);
+    vnAutoBatal();
     typeWriterFeedback();
 
     container.onclick = (e) => {
         if(e.target.id === 'btn-back-menu') return;
+        vnAutoBatal();
         if (vnIsTyping) {
             clearTimeout(vnTypewriterTimeout);
             questionEl.innerText = feedbackText;
             vnIsTyping = false;
             indicator.style.display = 'block';
+            vnSelesaiKetik(feedbackText);
         } else if (!isCorrect) {
             // Jawaban salah: kembali ke soal, pilihan yang tadi dipilih sudah dinonaktifkan
             container.onclick = null;
