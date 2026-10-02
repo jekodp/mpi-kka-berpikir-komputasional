@@ -3086,3 +3086,140 @@ html:not(.app-siap) #app-container { opacity: 0; }
     transition: opacity 0.4s ease;
 }
 .muat-lewati.tampil { opacity: 1; pointer-events: auto; }
+
+
+/* =========================================
+   RINGKASAN MATERI (tombol "Lihat Materi")
+   Tampil seperti halaman buku pelajaran, bisa digulir.
+========================================= */
+.materi-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8, 9, 20, 0.72);
+    backdrop-filter: blur(5px);
+}
+.materi-popup {
+    position: relative;
+    width: 940px;
+    height: 620px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    background: linear-gradient(165deg, #2b2d45, #1b1c30);
+    border: 1px solid rgba(93, 173, 226, 0.45);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+}
+.materi-kepala {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 22px 28px 16px 34px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.materi-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #5dade2;
+}
+.materi-kepala h2 { margin: 2px 0 0; font-size: 1.6rem; line-height: 1.25; color: #fff; }
+.materi-tutup {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+}
+.materi-isi {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 34px 30px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+.materi-isi section { margin-top: 20px; }
+.materi-isi h3 {
+    margin-bottom: 8px;
+    padding-left: 12px;
+    font-size: 1.12rem;
+    font-weight: 900;
+    color: var(--secondary-color);
+    border-left: 4px solid var(--secondary-color);
+}
+.materi-isi p { margin-bottom: 10px; }
+.materi-isi b { color: #fff; }
+.materi-isi ul, .materi-isi ol { margin: 0 0 10px; padding-left: 26px; }
+.materi-isi li { margin-bottom: 6px; }
+.materi-kotak {
+    margin: 10px 0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border-left: 4px solid;
+}
+.materi-kotak span { display: block; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 4px; }
+.materi-kotak p { margin: 0; }
+.materi-kotak.cerita { background: rgba(52, 152, 219, 0.12); border-color: #3498db; }
+.materi-kotak.cerita span { color: #7fc4f5; }
+.materi-kotak.contoh { background: rgba(46, 204, 113, 0.1); border-color: #2ecc71; }
+.materi-kotak.contoh span { color: #58d68d; }
+.materi-kotak.ingat { background: rgba(241, 196, 15, 0.1); border-color: var(--secondary-color); }
+.materi-kotak.ingat span { color: var(--secondary-color); }
+.materi-gulir {
+    position: absolute;
+    left: 50%; bottom: 12px;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(26, 27, 46, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.materi-gulir.tampil { opacity: 1; pointer-events: auto; }
+
+
+/* =========================================
+   MODE DEVELOPER
+========================================= */
+#dev-lencana {
+    position: absolute;
+    left: 8px; bottom: 8px;
+    z-index: 900;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: #1a1b2e;
+    background: #2ecc71;
+    border: none;
+    opacity: 0.85;
+    cursor: pointer;
+}
+.atur-dev { border-color: rgba(46, 204, 113, 0.4); }
+.atur-dev .tentang-judul { color: #58d68d; }
+.atur-chip-dev { color: #10301e; background: #2ecc71; border-color: #2ecc71; }
+.atur-centang { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: rgba(255, 255, 255, 0.85); cursor: pointer; }
+.atur-centang input { width: 18px; height: 18px; accent-color: #2ecc71; }
+.atur-dev-btn { color: #58d68d; background: rgba(46, 204, 113, 0.12); border-color: rgba(46, 204, 113, 0.6); }
+.atur-dev-btn:hover { background: rgba(46, 204, 113, 0.25); }
+#tentang-versi { cursor: default; user-select: none; }

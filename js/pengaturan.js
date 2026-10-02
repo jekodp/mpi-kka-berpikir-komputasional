@@ -9,7 +9,7 @@
 // =====================================================================
 
 const PENGATURAN_PREFIX = 'mpi_bk_';
-const PENGATURAN_DIBIARKAN = ['mpi_bk_terpasang'];
+const PENGATURAN_DIBIARKAN = ['mpi_bk_terpasang', 'mpi_bk_dev', 'mpi_bk_dev_lewati'];
 const PENGATURAN_RESET_OK = 'mpi_bk_reset_berhasil';   // sessionStorage: tampilkan pesan setelah dimuat ulang
 
 function pengaturanRingkasan() {
@@ -38,7 +38,7 @@ function renderPengaturan() {
                 <p class="kisi-subjudul">Atur aplikasi sesuai kebutuhanmu</p>
             </div>
             <div class="atur-kanan">
-                <section class="tentang-kartu atur-kartu atur-segera">
+                <section class="tentang-kartu atur-kartu atur-segera" ${modeDev() ? 'style="display:none"' : ''}>
                     <div class="atur-kepala">
                         <h3 class="tentang-judul">&#128100; Profil Siswa</h3>
                         <span class="atur-chip">Segera hadir</span>
@@ -52,6 +52,19 @@ function renderPengaturan() {
                         <div class="atur-isian">&mdash;</div>
                     </div>
                 </section>
+
+                ${modeDev() ? `
+                <section class="tentang-kartu atur-kartu atur-dev">
+                    <div class="atur-kepala">
+                        <h3 class="tentang-judul">&#128736; Mode Developer</h3>
+                        <span class="atur-chip atur-chip-dev">Aktif</span>
+                    </div>
+                    <p class="atur-ket">Semua menu dan bab terbuka, dan navigasi bab selalu tampil. Progres asli tidak diubah.</p>
+                    <div class="atur-aksi">
+                        <label class="atur-centang"><input type="checkbox" id="dev-lewati" ${devLewatiPembuka() ? 'checked' : ''}> Lewati layar pemuatan dan sampul</label>
+                        <button id="dev-matikan" class="atur-reset-btn atur-dev-btn">Matikan</button>
+                    </div>
+                </section>` : ''}
 
                 <section class="tentang-kartu atur-kartu atur-bahaya">
                     <h3 class="tentang-judul">&#8634; Reset ke Keadaan Awal</h3>
@@ -73,6 +86,14 @@ function renderPengaturan() {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });
     });
     document.getElementById('atur-reset').addEventListener('click', pengaturanKonfirmasiReset);
+
+    const devMati = document.getElementById('dev-matikan');
+    if (devMati) {
+        devMati.addEventListener('click', () => { setModeDev(false); renderPengaturan(); });
+        document.getElementById('dev-lewati').addEventListener('change', (e) => {
+            try { e.target.checked ? localStorage.setItem(DEV_LEWATI_KEY, '1') : localStorage.removeItem(DEV_LEWATI_KEY); } catch (err) { /* abaikan */ }
+        });
+    }
 }
 
 function pengaturanKonfirmasiReset() {

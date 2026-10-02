@@ -280,7 +280,7 @@ function renderTentang() {
                     <img src="assets/icon/icon-192.png" alt="Logo MPI BK">
                     <h3>MPI Berpikir Komputasional</h3>
                     <p>Media Pembelajaran Interaktif untuk belajar Berpikir Komputasional lewat dialog, kisi-kisi, dan simulasi ASTS.</p>
-                    <span class="kisi-chip">Versi 1.0</span>
+                    <span class="kisi-chip" id="tentang-versi">Versi 1.0</span>
                 </div>
             </div>
             <div class="tentang-kanan">
@@ -309,5 +309,19 @@ function renderTentang() {
 
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });
+    });
+
+    // Pintu masuk mode developer: ketuk tulisan versi 7 kali berturut-turut
+    let ketuk = 0, timerKetuk = null;
+    document.getElementById('tentang-versi').addEventListener('click', () => {
+        ketuk++;
+        clearTimeout(timerKetuk);
+        timerKetuk = setTimeout(() => { ketuk = 0; }, 1500);
+        if (ketuk < 7) return;
+        ketuk = 0;
+        setModeDev(!modeDev());
+        const v = document.getElementById('tentang-versi');
+        v.innerText = modeDev() ? 'Mode developer aktif' : 'Mode developer mati';
+        setTimeout(() => { if (v.isConnected) v.innerText = 'Versi 1.0'; }, 1800);
     });
 }

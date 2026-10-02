@@ -83,6 +83,8 @@ function initApp() {
     // Jika masih ada Simulasi ASTS yang berlangsung, langsung kunci ke ujian (js/simulasi.js)
     if (typeof simulasiCekSaatMuat === 'function' && simulasiCekSaatMuat()) { tandaiAplikasiSiap(); return; }
 
+    devPasangLencana();
+    if (devLewatiPembuka()) { renderView(); tandaiAplikasiSiap(); return; }
     renderPemuatan(renderCover);
 }
 
@@ -379,8 +381,55 @@ function playPageEnter() {
 // Simulasi ASTS  : Mulai Belajar selesai DAN semua kompetensi kisi-kisi ditandai paham.
 function progresBelajar() {
     const total = vnChapters.length;
+    if (modeDev()) return { done: total, total };
     const done = Math.max(0, Math.min(total, (appState.vnProgress || 1) - 1));
     return { done, total };
+}
+
+// ==========================================
+// MODE DEVELOPER (untuk guru/pengembang saat memeriksa aplikasi)
+// Saat aktif: semua menu dan bab terbuka, Mulai Belajar dianggap selesai, navigasi bab selalu
+// tampil, dan progres asli murid TIDAK diubah (begitu dimatikan, keadaan kembali seperti semula).
+// Cara mengaktifkan: ketuk tulisan "Versi 1.0" di halaman Tentang 7 kali,
+// atau tambahkan ?dev=1 di akhir alamat (dan ?dev=0 untuk mematikan).
+// ==========================================
+const DEV_KEY = 'mpi_bk_dev';
+const DEV_LEWATI_KEY = 'mpi_bk_dev_lewati';     // lewati layar pemuatan & sampul
+function modeDev() {
+    try { return localStorage.getItem(DEV_KEY) === '1'; } catch (e) { return false; }
+}
+function devLewatiPembuka() {
+    try { return modeDev() && localStorage.getItem(DEV_LEWATI_KEY) === '1'; } catch (e) { return false; }
+}
+function setModeDev(aktif) {
+    try { aktif ? localStorage.setItem(DEV_KEY, '1') : localStorage.removeItem(DEV_KEY); } catch (e) { /* abaikan */ }
+    devPasangLencana();
+}
+(function () {
+    const m = /[?&]dev=([01])/.exec(location.search);
+    if (m) { try { m[1] === '1' ? localStorage.setItem(DEV_KEY, '1') : localStorage.removeItem(DEV_KEY); } catch (e) { /* abaikan */ } }
+})();
+// Lencana kecil di pojok kiri bawah sebagai penanda mode developer sedang aktif
+function devPasangLencana() {
+    const kanvas = document.getElementById('app-container');
+    if (!kanvas) return;
+    let l = document.getElementById('dev-lencana');
+    if (!modeDev()) { if (l) l.remove(); return; }
+    if (l) return;
+    l = document.createElement('button');
+    l.id = 'dev-lencana';
+    l.innerText = 'DEV';
+    l.title = 'Mode developer aktif. Klik untuk membuka Pengaturan.';
+    l.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof simulasiAktif === 'function' && simulasiAktif()) return;
+        const idx = modules.findIndex(x => x.id === 'pengaturan');
+        appState.currentModuleIndex = idx;
+        window.lastMenuIndex = idx;
+        appState.currentView = 'materi';
+        renderView();
+    });
+    kanvas.appendChild(l);
 }
 function progresKisi() {
     if (typeof kisiMateri === 'undefined') return { done: 0, total: 0 };
@@ -396,6 +445,7 @@ function progresKisi() {
 function kunciModul(index) {
     const mod = modules[index];
     if (!mod) return null;
+    if (modeDev()) return null;                 // mode developer: semua menu terbuka
     const b = progresBelajar(), k = progresKisi();
     const syaratBelajar = { label: 'Selesaikan semua materi Mulai Belajar', done: b.done, total: b.total, tujuan: 'mulai_belajar' };
     const syaratKisi = { label: 'Tandai semua kompetensi di Cek Kisi-Kisi sebagai paham', done: k.done, total: k.total, tujuan: 'cek_kisi' };
@@ -1134,6 +1184,7 @@ let vnIsTyping = false;
 let vnTypewriterTimeout;
 
 function startVisualNovel() {
+    if (modeDev()) { renderChapterSelect(); return; }   // mode developer: langsung ke daftar bab, progres asli tidak disentuh
     if (!appState.vnProgress || appState.vnProgress === 0) {
         // Pemain baru: Paksa mulai dari Chapter 1 langsung ke dialog
         appState.vnProgress = 1;
@@ -1153,7 +1204,7 @@ function renderChapterSelect() {
     elements.contentArea.style.padding = '0';
     elements.contentArea.style.overflow = 'hidden';
 
-    let maxUnlocked = appState.vnProgress || 1;
+    let maxUnlocked = modeDev() ? vnChapters.length + 1 : (appState.vnProgress || 1);
     let isCompleted = maxUnlocked > vnChapters.length;
     
     // 288px = 40% dari tinggi kanvas 720px (sebelumnya 40vh, yang ikut berubah mengikuti layar)
@@ -1203,11 +1254,16 @@ function renderChapterSelect() {
                 <button id="btn-start-chapter" class="btn-primary" style="display: none; font-size: 1.5rem; padding: 15px 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">Mulai Materi Ini</button>
             </div>
             
-            <div id="materi-popup" class="glass-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; max-width: 600px; z-index: 200; padding: 30px; border-radius: 15px;">
-                <h2 id="materi-popup-title" style="color: #f1c40f; margin-top: 0; text-shadow: 1px 1px 3px black;">Judul</h2>
-                <ul id="materi-popup-list" style="color: white; line-height: 1.6; font-size: 1.1rem; padding-left: 20px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"></ul>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button id="btn-close-popup" class="btn-primary" style="padding: 8px 25px;">Tutup</button>
+            <div id="materi-popup" class="materi-backdrop" style="display: none;">
+                <div class="materi-popup">
+                    <div class="materi-kepala">
+                        <div>
+                            <span class="materi-label">Ringkasan Materi</span>
+                            <h2 id="materi-popup-title">Judul</h2>
+                        </div>
+                        <button id="btn-close-popup" class="materi-tutup" aria-label="Tutup">&#10005;</button>
+                    </div>
+                    <div id="materi-popup-list" class="materi-isi"></div>
                 </div>
             </div>
         </div>
@@ -1227,9 +1283,9 @@ function renderChapterSelect() {
         });
     });
     
-    document.getElementById('btn-close-popup').addEventListener('click', () => {
-        document.getElementById('materi-popup').style.display = 'none';
-    });
+    const popupMateri = document.getElementById('materi-popup');
+    document.getElementById('btn-close-popup').addEventListener('click', () => { popupMateri.style.display = 'none'; });
+    popupMateri.addEventListener('click', (e) => { if (e.target === popupMateri) popupMateri.style.display = 'none'; });
 
     const scrollContainer = document.getElementById('chapter-wheel-scroll');
     const items = document.querySelectorAll('.chapter-wheel-item');
@@ -1399,20 +1455,7 @@ function renderChapterSelect() {
                     if (isCompleted || parseInt(closestItem.id) < maxUnlocked) {
                         btnLihat.style.display = 'block';
                         btnLihat.onclick = () => {
-                            const chapData = vnChapters.find(c => c.id == closestItem.id);
-                            document.getElementById('materi-popup-title').innerText = chapData.title;
-                            const ul = document.getElementById('materi-popup-list');
-                            ul.innerHTML = '';
-                            
-                            if (chapData.summary && chapData.summary.length > 0) {
-                                chapData.summary.forEach(pt => {
-                                    ul.innerHTML += `<li style="margin-bottom: 10px;">${pt}</li>`;
-                                });
-                            } else {
-                                ul.innerHTML += `<li>Materi belum tersedia.</li>`;
-                            }
-                            
-                            document.getElementById('materi-popup').style.display = 'block';
+                            tampilkanMateriBab(vnChapters.find(c => c.id == closestItem.id));
                         };
                     } else {
                         btnLihat.style.display = 'none';
@@ -1443,6 +1486,47 @@ function renderChapterSelect() {
         });
 
     }, 50);
+}
+
+// ---------- RINGKASAN MATERI (tombol "Lihat Materi") ----------
+// Isi materi ada di js/materiData.js, ditulis seperti buku pelajaran.
+function tampilkanMateriBab(bab) {
+    const popup = document.getElementById('materi-popup');
+    const isi = document.getElementById('materi-popup-list');
+    if (!popup || !isi || !bab) return;
+    const m = (typeof materiBab !== 'undefined') ? materiBab[bab.id] : null;
+    document.getElementById('materi-popup-title').innerText = m ? m.judul : bab.title;
+
+    const kotak = { cerita: ['&#128172;', 'Dari cerita Kevin dan Kayana'], contoh: ['&#128161;', 'Contoh lain'], ingat: ['&#9888;&#65039;', 'Ingat!'] };
+    const blok = ([jenis, data]) => {
+        if (jenis === 'p') return `<p>${data}</p>`;
+        if (jenis === 'ul' || jenis === 'ol') return `<${jenis}>${data.map(x => `<li>${x}</li>`).join('')}</${jenis}>`;
+        if (kotak[jenis]) return `<div class="materi-kotak ${jenis}"><span>${kotak[jenis][0]} ${kotak[jenis][1]}</span><p>${data}</p></div>`;
+        return '';
+    };
+    if (m) {
+        isi.innerHTML = m.bagian.map(b => `<section><h3>${b.judul}</h3>${b.isi.map(blok).join('')}</section>`).join('');
+    } else if (bab.summary && bab.summary.length) {
+        isi.innerHTML = `<section><ul>${bab.summary.map(x => `<li>${x}</li>`).join('')}</ul></section>`;
+    } else {
+        isi.innerHTML = '<section><p>Materi belum tersedia.</p></section>';
+    }
+    popup.style.display = 'flex';
+    isi.scrollTop = 0;
+    popup.querySelector('.materi-popup').animate([{ transform: 'scale(0.95)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }],
+        { duration: 280, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+
+    // Petunjuk bahwa isinya masih bisa digulir ke bawah
+    let hint = popup.querySelector('.materi-gulir');
+    if (!hint) {
+        hint = document.createElement('button');
+        hint.className = 'materi-gulir';
+        hint.innerHTML = 'Gulir ke bawah &#9662;';
+        popup.querySelector('.materi-popup').appendChild(hint);
+        hint.addEventListener('click', () => isi.scrollBy({ top: isi.clientHeight * 0.75, behavior: 'smooth' }));
+        isi.addEventListener('scroll', () => hint.classList.toggle('tampil', isi.scrollHeight - isi.clientHeight - isi.scrollTop > 16));
+    }
+    requestAnimationFrame(() => hint.classList.toggle('tampil', isi.scrollHeight - isi.clientHeight - isi.scrollTop > 16));
 }
 
 function renderVNEngine() {
@@ -1594,7 +1678,7 @@ function vnLompatKe(index) {
 
 function playVNDialogue() {
     if (vnCurrentIndex >= dialogData.length) {
-        if ((appState.vnProgress || 0) <= vnChapters.length) {
+        if (!modeDev() && (appState.vnProgress || 0) <= vnChapters.length) {
             appState.vnProgress = vnChapters.length + 1;
             saveProgress();
         }
@@ -1613,7 +1697,7 @@ function playVNDialogue() {
         }
     }
     // Hanya simpan state posisi terakhir jika pemain membaca bab terbaru, bukan saat replay
-    if (currentChap >= (appState.vnProgress || 1)) {
+    if (!modeDev() && currentChap >= (appState.vnProgress || 1)) {
         appState.vnProgress = currentChap;
         appState.vnLastIndex = vnCurrentIndex;
     }
@@ -1625,7 +1709,7 @@ function playVNDialogue() {
     const dotsContainer = document.getElementById('vn-progress-dots');
     if (dotsContainer) {
         const babIni = vnChapters.filter(c => c.startIndex <= vnCurrentIndex).pop();
-        const babSelesai = babIni && babIni.id < (appState.vnProgress || 1);
+        const babSelesai = babIni && (modeDev() || babIni.id < (appState.vnProgress || 1));
         dotsContainer.innerHTML = '';
         dotsContainer.classList.toggle('tampil', !!babSelesai);
         dotsContainer.onclick = (e) => e.stopPropagation();   // ketukan di area navigasi tidak memajukan dialog
@@ -1662,7 +1746,7 @@ function playVNDialogue() {
 
     // --- LOGIKA SPLASH SCREEN (JUDUL MATERI) ---
     const chapterData = vnChapters.find(c => c.startIndex === vnCurrentIndex);
-    const isReplay = chapterData && (chapterData.id < (appState.vnProgress || 0));
+    const isReplay = chapterData && (modeDev() || chapterData.id < (appState.vnProgress || 0));
     
     if (chapterData && appState.lastSplashIndex !== vnCurrentIndex && !isReplay) {
         appState.lastSplashIndex = vnCurrentIndex;
