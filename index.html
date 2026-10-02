@@ -19,6 +19,20 @@
     <link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png">
 
     <link rel="stylesheet" href="css/style.css">
+    <!-- Ukuran kanvas dihitung sedini mungkin, dan kanvas baru ditampilkan setelah aplikasi siap,
+         supaya tidak ada tampilan setengah jadi yang berkedip saat halaman dimuat. -->
+    <script>
+        (function () {
+            var vv = window.visualViewport;
+            var w = vv ? vv.width : window.innerWidth, h = vv ? vv.height : window.innerHeight;
+            var r = document.documentElement.style;
+            r.setProperty('--canvas-scale', Math.min(w / 1280, h / 720));
+            r.setProperty('--canvas-x', ((vv ? vv.offsetLeft : 0) + w / 2) + 'px');
+            r.setProperty('--canvas-y', ((vv ? vv.offsetTop : 0) + h / 2) + 'px');
+            // Pengaman: bila karena suatu hal aplikasi gagal memberi tanda siap, kanvas tetap ditampilkan
+            setTimeout(function () { document.documentElement.classList.add('app-siap'); }, 6000);
+        })();
+    </script>
 </head>
 <body>
     <div id="landscape-warning">
@@ -33,7 +47,7 @@
     </div>
 
     <div id="app-container">
-        <header>
+        <header style="display: none;">
             <h1>Berpikir Komputasional</h1>
             <div id="progress-bar-container">
                 <div id="progress-bar"></div>
@@ -44,7 +58,7 @@
             <!-- Konten halaman akan dimuat di sini oleh JavaScript -->
         </main>
 
-        <footer>
+        <footer style="display: none;">
             <button id="btn-prev" class="btn" disabled>Sebelumnya</button>
             <span id="page-indicator">Halaman 1</span>
             <button id="btn-next" class="btn">Selanjutnya</button>

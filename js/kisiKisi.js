@@ -121,6 +121,15 @@ function renderKisiKisi() {
         try { sudahTur = localStorage.getItem(KISI_TUR_KEY); } catch (e) {}
         if (!sudahTur) setTimeout(() => { if (document.querySelector('.kisi-container')) kisiMulaiTur(state); }, 900);
         scroller.addEventListener('scroll', () => window.requestAnimationFrame(updatePhysics));
+
+        // Ukur ulang bila tata letak berubah (HP diputar, font selesai dimuat, dsb.)
+        pantauRoda(scroller, (pertama) => {
+            itemData.forEach(d => { d.top = d.el.offsetTop; d.height = d.el.offsetHeight; });
+            let idx = pertama ? 0 : wheelItems.findIndex(w => w.key === state.activeKey);
+            if (idx < 0) idx = 0;
+            centerOn(idx, false);
+            updatePhysics();
+        });
     }, 50);
 
     // Panah kiri/kanan di keyboard untuk carousel (berguna saat ditayangkan di proyektor)

@@ -81,9 +81,15 @@ function initApp() {
     setupEventListeners();
 
     // Jika masih ada Simulasi ASTS yang berlangsung, langsung kunci ke ujian (js/simulasi.js)
-    if (typeof simulasiCekSaatMuat === 'function' && simulasiCekSaatMuat()) return;
+    if (typeof simulasiCekSaatMuat === 'function' && simulasiCekSaatMuat()) { tandaiAplikasiSiap(); return; }
 
     renderView();
+    tandaiAplikasiSiap();
+}
+
+// Kanvas ditampilkan setelah halaman pertama selesai disiapkan (lihat html:not(.app-siap) di CSS)
+function tandaiAplikasiSiap() {
+    requestAnimationFrame(() => document.documentElement.classList.add('app-siap'));
 }
 
 function renderView() {
@@ -214,6 +220,31 @@ function tampilKunciModul(index) {
     });
 }
 
+// ---------- MENU PUTAR: UKUR ULANG SAAT TATA LETAK BERUBAH ----------
+// Posisi item menu putar disimpan (cache) agar gerakannya ringan. Cache itu bisa keliru bila
+// diukur saat kanvas tersembunyi, yaitu ketika halaman dibuka dengan HP masih TEGAK: semua
+// ukuran terbaca 0. Hal yang sama terjadi bila HP diputar tegak lalu mendatar lagi (posisi
+// gulir kembali ke 0), atau saat font selesai dimuat dan tinggi item berubah.
+// pantauRoda memanggil ukurUlang(pertama) setiap kali ukuran menu berubah:
+//   pertama = true  -> pengukuran sebelumnya tidak sah, pakai posisi awal;
+//   pertama = false -> pertahankan item yang sedang aktif di tengah.
+function pantauRoda(scroller, ukurUlang) {
+    if (!scroller || !window.ResizeObserver) return;
+    let sah = scroller.offsetHeight > 0;
+    let tinggi = scroller.offsetHeight, isi = scroller.scrollHeight;
+    const ro = new ResizeObserver(() => {
+        if (!scroller.isConnected) { ro.disconnect(); return; }
+        const h = scroller.offsetHeight, i = scroller.scrollHeight;
+        if (!h) { tinggi = 0; return; }                 // sedang tersembunyi (HP tegak)
+        if (h === tinggi && i === isi) return;
+        const pertama = !sah;
+        sah = true; tinggi = h; isi = i;
+        ukurUlang(pertama);
+    });
+    ro.observe(scroller);
+    if (scroller.firstElementChild) ro.observe(scroller.firstElementChild);
+}
+
 function renderMainMenu() {
     document.body.classList.remove('theme-light', 'theme-dark');
     elements.header.style.display = 'none';
@@ -260,7 +291,7 @@ function renderMainMenu() {
             '<div class="menu-slide-wadah"><div class="menu-slide"></div><div class="menu-slide"></div></div>' +
         '</div>' +
         '<div class="menu-list-box">' +
-            '<div class="menu-items" id="menu-items-scroll">' +
+            '<div class="menu-items belum-siap" id="menu-items-scroll">' +
                 tenBlocksHTML +
             '</div>' +
         '</div>' +
@@ -329,7 +360,7 @@ function renderMainMenu() {
         const block = document.querySelector('.scroll-block');
         if(!block) return;
         
-        const blockHeight = block.offsetHeight; // Penting untuk digunakan oleh scroll event di bawah
+        let blockHeight = block.offsetHeight; // Penting untuk digunakan oleh scroll event di bawah
         
         // Posisikan awal secara instan agar "Mulai Belajar" (Index 0 pada blok ke-5) persis di tengah layar
         const containerHeight = scrollContainer.offsetHeight;
@@ -360,6 +391,7 @@ function renderMainMenu() {
                 // Culling: Abaikan dan sembunyikan jika item jauh di luar layar
                 if (itemCenterY < -100 || itemCenterY > containerHeight + 100) {
                     data.el.style.opacity = '0';
+                    data.el.classList.remove('active-center');
                     continue;
                 }
                 
@@ -402,6 +434,20 @@ function renderMainMenu() {
         // Cek fisika pertama kali
         updateMenuPhysics();
         btnBuka.classList.add('show');
+        // Daftar baru ditampilkan setelah posisinya benar (lihat .menu-items.belum-siap di CSS).
+        // Bila kanvas sedang tersembunyi (HP tegak), tunggu sampai pengukuran ulang di bawah.
+        if (scrollContainer.offsetHeight) scrollContainer.classList.remove('belum-siap');
+
+        // Ukur ulang bila tata letak berubah (HP diputar, font selesai dimuat, dsb.)
+        pantauRoda(scrollContainer, (pertama) => {
+            itemData.forEach(d => { d.top = d.el.offsetTop; d.height = d.el.offsetHeight; });
+            blockHeight = block.offsetHeight;
+            const aktif = pertama ? (window.lastMenuIndex || 0) : (parseInt(btnBuka.getAttribute('data-index')) || 0);
+            const t = itemData[20 + aktif];
+            if (t) scrollContainer.scrollTop = t.top - (scrollContainer.offsetHeight / 2) + (t.height / 2);
+            updateMenuPhysics();
+            scrollContainer.classList.remove('belum-siap');
+        });
 
         // Event Scroll yang sangat mulus
         scrollContainer.addEventListener('scroll', () => {
@@ -1118,6 +1164,19 @@ function renderChapterSelect() {
         updateChapterPhysics();
         scrollContainer.addEventListener('scroll', () => {
             window.requestAnimationFrame(updateChapterPhysics);
+        });
+
+        // Ukur ulang bila tata letak berubah (HP diputar, font selesai dimuat, dsb.)
+        pantauRoda(scrollContainer, (pertama) => {
+            itemData.forEach(d => { d.top = d.el.offsetTop; d.height = d.el.offsetHeight; });
+            let idx = itemData.findIndex(d => d.el.classList.contains('active-center'));
+            if (pertama || idx < 0) idx = targetIndex;
+            if (itemData[idx]) {
+                scrollContainer.style.scrollBehavior = 'auto';
+                scrollContainer.scrollTop = itemData[idx].top - (scrollContainer.offsetHeight / 2) + (itemData[idx].height / 2);
+                scrollContainer.style.scrollBehavior = '';
+            }
+            updateChapterPhysics();
         });
 
     }, 50);

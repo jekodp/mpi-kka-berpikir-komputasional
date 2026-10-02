@@ -2869,3 +2869,14 @@ button.sim-opsi:hover { border-color: rgba(255, 255, 255, 0.35); background: rgb
     font-variant-numeric: tabular-nums;
 }
 .vn-container.chapter-transition .vn-nav { opacity: 0; }
+
+
+/* =========================================
+   TANPA KEDIP SAAT DIMUAT
+========================================= */
+/* Kanvas baru tampil setelah aplikasi selesai menyiapkan halaman pertama */
+#app-container { transition: opacity 0.25s ease; }
+html:not(.app-siap) #app-container { opacity: 0; }
+/* Daftar Menu Utama baru tampil setelah posisinya dihitung (item tengah, ukuran, transparansi) */
+.menu-items { transition: opacity 0.25s ease; }
+.menu-items.belum-siap { opacity: 0; }

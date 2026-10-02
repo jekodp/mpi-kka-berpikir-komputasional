@@ -75,10 +75,14 @@ function pasangSetelahMenu() {
     try { sudah = localStorage.getItem(PASANG_SPOTLIGHT_KEY); } catch (e) { sudah = '1'; }
     const ujianBerjalan = (typeof simulasiAktif === 'function') && simulasiAktif();
     if (!sudah && !ujianBerjalan) {
-        setTimeout(() => {
+        const coba = (sisa) => setTimeout(() => {
             // Pastikan masih di Menu Utama (murid belum pindah halaman)
-            if (document.getElementById('btn-pasang') === btn && !document.querySelector('.pasang-spot')) pasangTampilSpotlight(btn);
+            if (document.getElementById('btn-pasang') !== btn || document.querySelector('.pasang-spot')) return;
+            // Kanvas tersembunyi saat HP tegak: ukuran tombol terbaca 0, jadi tunggu sampai HP mendatar
+            if (!btn.offsetHeight) { if (sisa > 0) coba(sisa - 1); return; }
+            pasangTampilSpotlight(btn);
         }, 1100);
+        coba(120);
     }
 }
 
