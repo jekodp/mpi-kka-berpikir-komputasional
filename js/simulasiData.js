@@ -76,7 +76,7 @@ const simulasiSoal = [
             },
             {
                 "t": "img",
-                "src": "assets/soal/L2_kebun.png"
+                "src": "assets/soal/L2_kebun.webp"
             },
             {
                 "t": "code",
@@ -231,7 +231,7 @@ const simulasiSoal = [
             },
             {
                 "t": "img",
-                "src": "assets/soal/L4_kartu_pinjam.png"
+                "src": "assets/soal/L4_kartu_pinjam.webp"
             }
         ],
         "pertanyaan": "Agar program menerapkan abstraksi, data manakah yang sebaiknya dipertahankan dari setiap kartu pinjam?",
@@ -393,7 +393,7 @@ const simulasiSoal = [
             },
             {
                 "t": "img",
-                "src": "assets/soal/L7_segitiga.png"
+                "src": "assets/soal/L7_segitiga.webp"
             }
         ],
         "pertanyaan": "Manakah strategi alternatif yang tepat agar tidak ada segitiga yang terlewat?",

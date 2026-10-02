@@ -83,8 +83,230 @@ function initApp() {
     // Jika masih ada Simulasi ASTS yang berlangsung, langsung kunci ke ujian (js/simulasi.js)
     if (typeof simulasiCekSaatMuat === 'function' && simulasiCekSaatMuat()) { tandaiAplikasiSiap(); return; }
 
-    renderView();
+    renderPemuatan(renderCover);
+}
+
+// ==========================================
+// LAYAR PEMUATAN (LOADING)
+// Semua gambar yang dipakai aplikasi dimuat lebih dulu, supaya setelah itu tidak ada gambar
+// yang muncul terlambat. Setelah selesai, lanjut ke sampul.
+// ==========================================
+const PEMUATAN_MIN_MS = 3000;        // lama minimum layar pemuatan, agar karakter pertama sempat terlihat
+const PEMUATAN_GANTI_EKSPRESI_MS = 4000;   // tiap karakter tampil 4 detik; jumlah yang tampil mengikuti lama pemuatan
+const PEMUATAN_PUDAR_MS = 1300;            // lama perpindahan antarkarakter (samakan dengan CSS .muat-karakter)
+const PEMUATAN_GANTI_TIP_MS = 3200;
+const PEMUATAN_TOMBOL_LEWATI_MS = 9000;   // jika jaringan lambat, tawarkan lanjut tanpa menunggu
+// Tips di bawah bar: [label, isi]. Materi empat pilar dan fakta menarik yang berkaitan.
+const PEMUATAN_TIPS = [
+    ['Tips', 'Berpikir komputasional bukan soal coding, tetapi cara berpikir untuk memecahkan masalah.'],
+    ['Dekomposisi', 'Masalah sebesar apa pun terasa ringan kalau dipecah menjadi tugas-tugas kecil.'],
+    ['Pengenalan Pola', 'Kebiasaan yang berulang bisa dipakai untuk menebak apa yang terjadi berikutnya.'],
+    ['Abstraksi', 'Fokus pada hal yang penting, abaikan detail yang tidak dibutuhkan.'],
+    ['Algoritma', 'Langkah yang jelas dan berurutan membuat hasilnya bisa diulang siapa saja.'],
+    ['Tips', 'Keempat pilar itu setara. Tidak ada yang paling penting, semuanya saling melengkapi.'],
+    ['Tahukah kamu?', 'Kata "algoritma" berasal dari nama ilmuwan abad ke-9, Al-Khwarizmi.'],
+    ['Tahukah kamu?', 'Resep masakan adalah algoritma: langkahnya berurutan dan hasilnya bisa diulang.'],
+    ['Tahukah kamu?', 'Peta jalur kereta adalah abstraksi: jarak aslinya diabaikan, yang penting urutan stasiunnya.'],
+    ['Tahukah kamu?', 'Kubus Rubik punya sekitar 43 kuintiliun susunan, tetapi semuanya bisa diselesaikan dalam 20 putaran atau kurang.'],
+    ['Tahukah kamu?', 'Semua foto, lagu, dan gim di komputer tersusun hanya dari angka 0 dan 1.'],
+    ['Tahukah kamu?', 'Dengan algoritma yang tepat, komputer bisa mengurutkan sejuta nama dalam waktu kurang dari sedetik.'],
+    ['Tahukah kamu?', 'Istilah "computational thinking" dipopulerkan oleh Jeannette Wing lewat tulisannya pada tahun 2006.'],
+    ['Tahukah kamu?', 'Mengikat tali sepatu pun algoritma: urutan langkah yang sudah kamu hafal di luar kepala.']
+];
+
+// Daftar semua gambar. Tiap entri: { karakter?: true, muat(selesai) }, dengan selesai(src) dipanggil
+// saat gambar siap atau gagal. Gambar karakter didahulukan karena ditampilkan di layar pemuatan.
+function pemuatanDaftarGambar() {
+    const tugas = [];
+    const berkas = (src) => tugas.push({ muat: (selesai) => { const im = new Image(); im.onload = im.onerror = () => selesai(); im.src = src; } });
+    const aset = (nama) => tugas.push({ muat: (selesai) => cariAset(nama, () => selesai(), () => selesai()) });
+
+    const sudah = {};
+    [['kevin', null], ['kayana', null]].concat(dialogData
+        .filter(d => d.type !== 'quiz' && d.emotion && (d.speaker === 'Kevin' || d.speaker === 'Kayana'))
+        .map(d => [d.speaker.toLowerCase(), d.emotion]))
+        .forEach(([k, e]) => {
+            if (sudah[k + ':' + e]) return;
+            sudah[k + ':' + e] = true;
+            // ekspresi (atau cadangannya bila gambarnya belum dibuat)
+            tugas.push({ karakter: true, muat: (selesai) => vnCariEkspresi(k, e, (src) => selesai(src), () => selesai()) });
+        });
+    tugas.push({ karakter: true, muat: (selesai) => cariAset('kayana_quiz', (src) => selesai(src), () => selesai()) });
+    aset('cover');
+    vnChapters.forEach(c => aset(c.bg));                                   // latar tiap bab
+    if (typeof tentangData !== 'undefined') berkas(tentangData.pengembang.foto);
+    if (typeof simulasiSoal !== 'undefined') {
+        simulasiSoal.forEach(q => (q.konteks || []).forEach(b => { if (b.t === 'img' && b.src) berkas(b.src); }));
+    }
+    return tugas;
+}
+
+function renderPemuatan(setelahSelesai) {
+    document.body.classList.remove('theme-light', 'theme-dark');
+    elements.header.style.display = 'none';
+    elements.footer.style.display = 'none';
+    elements.contentArea.style.padding = '0';
+    elements.contentArea.style.overflow = 'hidden';
+
+    elements.contentArea.innerHTML = `
+        <div class="muat-container">
+            <div class="muat-latar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="muat-karakter" id="muat-kar-a"></div>
+            <div class="muat-karakter" id="muat-kar-b"></div>
+            <div class="muat-gelap"></div>
+            <div class="muat-label-atas">MPI Berpikir Komputasional</div>
+            <button id="muat-lewati" class="glass-btn muat-lewati">Lanjut tanpa menunggu &#10095;</button>
+            <div class="muat-bawah">
+                <div class="muat-baris">
+                    <span class="muat-judul">Memuat<span class="muat-titik"><b>.</b><b>.</b><b>.</b></span></span>
+                    <span class="muat-persen" id="muat-persen">0%</span>
+                </div>
+                <div class="muat-bar">
+                    <div class="muat-bar-isi" id="muat-bar-isi"></div>
+                    <div class="muat-bar-kepala" id="muat-bar-kepala"></div>
+                </div>
+                <div class="muat-tip" id="muat-tip"></div>
+            </div>
+        </div>`;
     tandaiAplikasiSiap();
+
+    const root = elements.contentArea.firstElementChild;
+    const bar = document.getElementById('muat-bar-isi');
+    const kepala = document.getElementById('muat-bar-kepala');
+    const persen = document.getElementById('muat-persen');
+    const tip = document.getElementById('muat-tip');
+    const lewati = document.getElementById('muat-lewati');
+    const lapis = [document.getElementById('muat-kar-a'), document.getElementById('muat-kar-b')];
+
+    // Tips bergantian, urutan diacak tiap kali aplikasi dibuka
+    const urutanTip = PEMUATAN_TIPS.map((t, i) => i).sort(() => Math.random() - 0.5);
+    let noTip = 0;
+    const gantiTip = () => {
+        const [label, isi] = PEMUATAN_TIPS[urutanTip[noTip % urutanTip.length]];
+        noTip++;
+        tip.innerHTML = `<b>${label}</b><span>${isi}</span>`;
+        tip.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }],
+            { duration: 400, easing: 'ease-out' });
+    };
+    gantiTip();
+    const timerTip = setInterval(gantiTip, PEMUATAN_GANTI_TIP_MS);
+
+    // Karakter tampil satu per satu, pelan-pelan: tiap 4 detik berganti, dengan gerakan
+    // zoom in / zoom out bergantian. Berapa karakter yang sempat tampil bergantung pada
+    // lamanya pemuatan; begitu 100%, layar lanjut ke sampul.
+    const antre = [], pernah = {};
+    let lapisAktif = 0, sedangTampil = null, noZoom = 0;
+    const tampilBerikut = () => {
+        if (!root.isConnected) return;
+        // bila antrean habis tetapi pemuatan belum selesai, ulangi dari gambar yang sudah ada
+        if (!antre.length) { const semua = Object.keys(pernah).filter(s => s !== sedangTampil); if (semua.length > 1) antre.push(...semua); }
+        // Kevin dan Kayana ditampilkan bergantian bila memungkinkan; pilihannya diacak
+        // supaya tiap kali aplikasi dibuka, karakter yang muncul tidak selalu sama
+        const tokoh = (x) => (x || '').indexOf('kevin') >= 0 ? 'kevin' : 'kayana';
+        let calon = antre.filter(x => tokoh(x) !== tokoh(sedangTampil));
+        if (!calon.length) calon = antre;
+        const src = calon[Math.floor(Math.random() * calon.length)];
+        if (!src) return;
+        antre.splice(antre.indexOf(src), 1);
+        sedangTampil = src;
+        lapisAktif = 1 - lapisAktif;
+        const el = lapis[lapisAktif];
+        el.style.backgroundImage = `url('${src}')`;
+        // zoom in dan zoom out bergantian, berjalan pelan selama karakter tampil
+        const zoomIn = (noZoom++ % 2 === 0);
+        el.getAnimations().forEach(a => a.cancel());
+        el.animate([{ transform: zoomIn ? 'scale(1)' : 'scale(1.1)' }, { transform: zoomIn ? 'scale(1.1)' : 'scale(1)' }],
+            { duration: PEMUATAN_GANTI_EKSPRESI_MS + PEMUATAN_PUDAR_MS * 2, easing: 'linear', fill: 'forwards' });
+        el.classList.add('aktif');
+        lapis[1 - lapisAktif].classList.remove('aktif');
+    };
+    let timerKar = null, bolehMulai = false;
+    const mulaiPutar = () => {
+        if (timerKar || !antre.length) return;
+        tampilBerikut();
+        timerKar = setInterval(tampilBerikut, PEMUATAN_GANTI_EKSPRESI_MS);
+    };
+    // Karakter pertama ditunda sejenak agar ada beberapa pilihan untuk diacak. Bila jaringan
+    // lambat dan belum ada gambar yang siap, karakter pertama tampil begitu gambarnya tiba.
+    const timerAwal = setTimeout(() => { bolehMulai = true; mulaiPutar(); }, 350);
+
+    const mulai = Date.now();
+    const tugas = pemuatanDaftarGambar();
+    let beres = 0, selesaiSemua = false;
+    const lanjut = () => {
+        if (selesaiSemua) return;
+        selesaiSemua = true;
+        clearInterval(timerTip);
+        clearInterval(timerKar);
+        clearTimeout(timerAwal);
+        clearTimeout(timerLewati);
+        if (!root.isConnected) return;
+        const a = root.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, easing: 'ease-in', fill: 'forwards' });
+        a.onfinish = () => { setelahSelesai(); playPageEnter(); };
+    };
+    const maju = (t, src) => {
+        if (t.karakter && src && !pernah[src]) {
+            pernah[src] = true;
+            antre.push(src);
+            if (bolehMulai) mulaiPutar();
+        }
+        beres++;
+        const p = Math.round(beres / tugas.length * 100);
+        bar.style.width = p + '%';
+        kepala.style.left = p + '%';
+        persen.innerText = p + '%';
+        if (beres >= tugas.length) setTimeout(lanjut, Math.max(400, PEMUATAN_MIN_MS - (Date.now() - mulai)));
+    };
+    tugas.forEach(t => { let sekali = false; t.muat((src) => { if (sekali) return; sekali = true; maju(t, src); }); });
+
+    const timerLewati = setTimeout(() => lewati.classList.add('tampil'), PEMUATAN_TOMBOL_LEWATI_MS);
+    lewati.addEventListener('click', lanjut);
+}
+
+// ==========================================
+// HALAMAN SAMPUL (COVER)
+// Tampil setiap kali aplikasi dibuka; tombol "Mulai" membawa murid ke Menu Utama.
+// Gambar: assets/latar/cover.(webp|png|jpg). Judul dan tombol dibuat lewat kode agar tetap tajam.
+// ==========================================
+const COVER = {
+    label: 'Media Pembelajaran Interaktif',
+    judul: ['Berpikir', 'Komputasional'],
+    subjudul: 'Koding dan Kecerdasan Artifisial Kelas X',
+    tombol: 'Mulai'
+};
+
+function renderCover() {
+    document.body.classList.remove('theme-light', 'theme-dark');
+    elements.header.style.display = 'none';
+    elements.footer.style.display = 'none';
+    elements.contentArea.style.padding = '0';
+    elements.contentArea.style.overflow = 'hidden';
+
+    elements.contentArea.innerHTML = `
+        <div class="cover-container">
+            <div class="cover-bg" id="cover-bg"></div>
+            <div class="cover-gelap"></div>
+            <div class="cover-isi">
+                <span class="cover-label">${COVER.label}</span>
+                <h1 class="cover-judul">${COVER.judul.map(b => `<span>${b}</span>`).join('')}</h1>
+                <p class="cover-subjudul">${COVER.subjudul}</p>
+                <button id="btn-cover-mulai" class="btn-primary cover-mulai">${COVER.tombol} <span>&#10095;</span></button>
+            </div>
+        </div>`;
+
+    document.getElementById('btn-cover-mulai').addEventListener('click', () => {
+        navigateWithTransition(() => renderView());
+    });
+
+    // Sampul baru ditampilkan setelah gambarnya siap (atau gagal dimuat), supaya tidak berkedip
+    let sudah = false;
+    const tampil = () => { if (sudah) return; sudah = true; tandaiAplikasiSiap(); };
+    cariAset('cover', (src) => {
+        const bg = document.getElementById('cover-bg');
+        if (bg) bg.style.backgroundImage = `url('${src}')`;
+        tampil();
+    }, tampil);
+    setTimeout(tampil, 2500);
 }
 
 // Kanvas ditampilkan setelah halaman pertama selesai disiapkan (lihat html:not(.app-siap) di CSS)
@@ -754,15 +976,26 @@ document.addEventListener('DOMContentLoaded', initApp);
 // ==========================================
 // MESIN VISUAL NOVEL (K-KA)
 // ==========================================
-// Cari gambar di folder assets: dicoba berurutan .webp, .png, lalu .jpg.
-// Jadi gambar cukup diganti ke format WebP dengan nama yang sama, tanpa mengubah kode.
+// ---------- LOKASI GAMBAR ----------
+// Struktur folder assets:
+//   assets/latar/      latar tiap bab dan gambar sampul (cover)
+//   assets/karakter/   Kevin & Kayana beserta semua ekspresinya (kevin_aha, kayana_quiz, ...)
+//   assets/soal/       gambar pada soal Simulasi ASTS
+//   assets/profil/     foto pengembang (halaman Tentang)
+//   assets/icon/       logo dan ikon aplikasi (tetap PNG karena dibutuhkan saat instalasi)
+// Kode cukup menyebut NAMA gambar (mis. 'kantin' atau 'kevin_aha'); foldernya ditentukan di sini.
+// Format dicoba berurutan: .webp, .png, lalu .jpg, jadi gambar baru boleh memakai format mana pun.
 const ASET_FORMAT = ['webp', 'png', 'jpg'];
+function folderAset(nama) {
+    if (/^(kevin|kayana)(_|$)/.test(nama)) return 'karakter/';
+    return 'latar/';
+}
 const asetDitemukan = {};
 function cariAset(baseName, onOk, onGagal) {
     if (asetDitemukan[baseName]) { onOk(asetDitemukan[baseName]); return; }
     const coba = (i) => {
         if (i >= ASET_FORMAT.length) { if (onGagal) onGagal(); return; }
-        const src = `assets/${baseName}.${ASET_FORMAT[i]}`;
+        const src = `assets/${folderAset(baseName)}${baseName}.${ASET_FORMAT[i]}`;
         const img = new Image();
         img.onload = () => { asetDitemukan[baseName] = src; onOk(src); };
         img.onerror = () => coba(i + 1);
@@ -771,8 +1004,38 @@ function cariAset(baseName, onOk, onGagal) {
     coba(0);
 }
 
+function loadVNAsset(elementId, baseName, isCharacter = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    el.innerText = '';
+
+    cariAset(baseName, (src) => {
+        el.style.backgroundImage = `url('${src}')`;
+    }, () => {
+        {
+            // Jika semua format gagal
+            el.style.backgroundImage = 'none';
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            
+            if (isCharacter) {
+                el.innerText = `[Karakter: ${baseName}]`;
+                el.style.color = '#fff';
+                el.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            } else {
+                el.innerText = `[Latar: ${baseName}]`;
+                el.style.color = 'rgba(255,255,255,0.7)';
+                el.style.fontSize = '1.5rem';
+                el.style.fontWeight = 'bold';
+            }
+        }
+    });
+}
+
 // ---------- EKSPRESI KARAKTER PER BARIS DIALOG ----------
-// Gambar ekspresi: assets/<karakter>_<ekspresi>.(webp|png|jpg). Jika belum ada, dicoba ekspresi
+// Gambar ekspresi: assets/karakter/<karakter>_<ekspresi>.(webp|png|jpg). Jika belum ada, dicoba ekspresi
 // cadangan secara berurutan, dan terakhir gambar dasar (kevin.png / kayana.png).
 // Jadi ekspresi boleh dilengkapi bertahap: cukup taruh filenya di assets, tanpa mengubah kode.
 const VN_EKSPRESI_CADANGAN = {

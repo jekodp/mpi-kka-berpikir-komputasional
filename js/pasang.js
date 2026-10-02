@@ -252,7 +252,7 @@ const tentangData = {
     tujuan: 'Murid mampu menerapkan berpikir komputasional untuk memecahkan permasalahan sehari-hari yang kompleks.',
     pengembang: {
         nama: 'Achmad Jaka Dwena Putra, S.Kom.',
-        foto: 'assets/pengembang.jpg',
+        foto: 'assets/profil/pengembang.webp',
         sekolah: 'SMA Negeri 5 Mataram',
         mapel: 'Informatika dan KKA',
         email: 'achmad5511@guru.sma.belajar.id'

@@ -4,7 +4,10 @@
 # Cadangan kode versi lama (tidak dipakai aplikasi)
 _backup_sebelum_perbaikan/
 
-# Foto asli ukuran penuh (aplikasi memakai assets/pengembang.jpg)
+# Gambar asli sebelum dikonversi ke WebP (aplikasi memakai versi WebP di assets/latar, karakter, soal, profil)
+assets/_asli/
+
+# Foto asli ukuran penuh (aplikasi memakai assets/profil/pengembang.webp)
 assets/profile.jpg
 
 # File bawaan sistem dan editor

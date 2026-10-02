@@ -1,5 +1,5 @@
 // Kolom `emotion` menentukan gambar ekspresi karakter pada baris itu:
-// assets/<karakter>_<emotion>.(webp|png|jpg), mis. kayana_menjelaskan.png.
+// assets/karakter/<karakter>_<emotion>.(webp|png|jpg), mis. kayana_menjelaskan.webp.
 // Jika gambarnya belum ada, dipakai ekspresi cadangan lalu gambar dasar (lihat VN_EKSPRESI_CADANGAN di app.js).
 // Kolom `sembunyikan: "Kevin"` / `"Kayana"` membuat karakter itu belum tampil pada baris tersebut
 // (mis. Kevin baru muncul setelah Kayana menyapanya).
