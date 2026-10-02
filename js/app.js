@@ -1443,11 +1443,11 @@ function tampilkanMateriBab(bab) {
     const m = (typeof materiBab !== 'undefined') ? materiBab[bab.id] : null;
     document.getElementById('materi-popup-title').innerText = m ? m.judul : bab.title;
 
-    const kotak = { cerita: ['&#128172;', 'Dari cerita Kevin dan Kayana'], contoh: ['&#128161;', 'Contoh lain'], ingat: ['&#9888;&#65039;', 'Ingat!'] };
+    const kotak = { cerita: 'Dari cerita Kevin dan Kayana', contoh: 'Contoh lain', ingat: 'Ingat' };
     const blok = ([jenis, data]) => {
         if (jenis === 'p') return `<p>${data}</p>`;
         if (jenis === 'ul' || jenis === 'ol') return `<${jenis}>${data.map(x => `<li>${x}</li>`).join('')}</${jenis}>`;
-        if (kotak[jenis]) return `<div class="materi-kotak ${jenis}"><span>${kotak[jenis][0]} ${kotak[jenis][1]}</span><p>${data}</p></div>`;
+        if (kotak[jenis]) return `<div class="materi-kotak ${jenis}"><span>${kotak[jenis]}</span><p>${data}</p></div>`;
         return '';
     };
     if (m) {
