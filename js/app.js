@@ -517,6 +517,76 @@ function pantauRoda(scroller, ukurUlang) {
     if (scroller.firstElementChild) ro.observe(scroller.firstElementChild);
 }
 
+// Penanda posisi untuk menu roda di sub menu: titik-titik kecil di tepi kiri layar.
+// `daftar` = [{ judul, redup }], `pilih(i)` dipanggil saat sebuah titik diketuk.
+// Mengembalikan fungsi untuk menandai titik yang sedang aktif.
+function pasangTitikRoda(wadah, daftar, pilih) {
+    if (!wadah) return () => {};
+    const nav = document.createElement('div');
+    nav.className = 'roda-titik';
+    daftar.forEach((d, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.title = d.judul;
+        b.setAttribute('aria-label', d.judul);
+        if (d.redup) b.classList.add('redup');
+        b.addEventListener('click', (e) => { e.stopPropagation(); pilih(i); });
+        nav.appendChild(b);
+    });
+    wadah.appendChild(nav);
+    return (aktif) => Array.from(nav.children).forEach((b, i) => b.classList.toggle('aktif', i === aktif));
+}
+
+// Roda kartu (halaman Tentang dan Pengaturan): kartu-kartu besar digulir naik-turun,
+// kartu di tengah menonjol, yang lain mengintip redup. `judul` = nama tiap kartu untuk titik navigasi.
+function pasangRodaKartu(roda, panel, judul, awal) {
+    const kartuEls = Array.from(roda.querySelectorAll('.ttg-kartu'));
+    let data = [], aktif = Math.min(kartuEls.length - 1, Math.max(0, awal || 0));
+    const ukur = () => { data = kartuEls.map(el => ({ el, top: el.offsetTop, height: el.offsetHeight })); };
+    const keTengah = (idx, halus) => {
+        const k = data[idx];
+        if (!k) return;
+        roda.scrollTo({ top: k.top - roda.offsetHeight / 2 + k.height / 2, behavior: halus ? 'smooth' : 'auto' });
+    };
+    const tandaiTitik = pasangTitikRoda(panel, judul.map(j => ({ judul: j })), (i) => keTengah(i, true));
+    const fisika = () => {
+        const tengah = roda.scrollTop + roda.offsetHeight / 2;
+        let dekat = 0, min = Infinity;
+        data.forEach((k, i) => {
+            const jarak = Math.abs(tengah - (k.top + k.height / 2));
+            const rasio = Math.max(0, 1 - jarak / 520);
+            k.el.style.transform = `translateX(${-(jarak * jarak) / 2600}px) scale(${0.84 + rasio * 0.16})`;
+            k.el.style.opacity = 0.18 + rasio * 0.82;
+            if (jarak < min) { min = jarak; dekat = i; }
+        });
+        aktif = dekat;
+        roda.dataset.aktif = dekat;
+        kartuEls.forEach((el, i) => el.classList.toggle('active-center', i === dekat));
+        tandaiTitik(dekat);
+    };
+    setTimeout(() => {
+        ukur();
+        keTengah(aktif, false);
+        fisika();
+        roda.classList.add('siap');
+        roda.addEventListener('scroll', () => window.requestAnimationFrame(fisika));
+        kartuEls.forEach((el, i) => el.addEventListener('click', () => { if (i !== aktif) keTengah(i, true); }));
+        // Ukur ulang bila tata letak berubah (HP diputar, font atau foto selesai dimuat, dsb.)
+        pantauRoda(roda, () => { const kini = aktif; ukur(); keTengah(kini, false); fisika(); });
+    }, 50);
+}
+// Panah atas/bawah di keyboard untuk roda kartu (berguna saat ditayangkan di proyektor)
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const r = document.querySelector('.ttg-roda');
+    if (!r || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
+    e.preventDefault();
+    const els = Array.from(r.querySelectorAll('.ttg-kartu'));
+    const kini = els.findIndex(el => el.classList.contains('active-center'));
+    const tujuan = els[Math.min(els.length - 1, Math.max(0, kini + (e.key === 'ArrowDown' ? 1 : -1)))];
+    if (tujuan) r.scrollTo({ top: tujuan.offsetTop - r.offsetHeight / 2 + tujuan.offsetHeight / 2, behavior: 'smooth' });
+});
+
 function renderMainMenu() {
     document.body.classList.remove('theme-light', 'theme-dark');
     elements.header.style.display = 'none';
@@ -1380,6 +1450,10 @@ function renderChapterSelect() {
             scrollContainer.scrollTop = itemData[targetIndex].top - (scrollContainer.offsetHeight / 2) + (itemData[targetIndex].height / 2);
         }
 
+        const tandaiTitik = pasangTitikRoda(document.querySelector('.chapter-list-panel'),
+            itemData.map(d => ({ judul: d.el.querySelector('h3').innerText, redup: !d.unlocked })),
+            (i) => itemData[i].el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+
         function updateChapterPhysics() {
             const currentScroll = scrollContainer.scrollTop;
             const containerHeight = scrollContainer.offsetHeight;
@@ -1413,6 +1487,7 @@ function renderChapterSelect() {
 
             if (closestItem) {
                 closestItem.el.classList.add('active-center');
+                tandaiTitik(itemData.indexOf(closestItem));
                 
                 // Ubah gambar background
                 document.querySelectorAll('.chapter-preview-bg').forEach(bg => bg.classList.remove('active'));

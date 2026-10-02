@@ -83,6 +83,10 @@ function renderKisiKisi() {
         if (idx >= 0) centerOn(idx, true);
     };
 
+    const tandaiTitik = pasangTitikRoda(document.querySelector('.kisi-list-panel'),
+        wheelItems.map(w => ({ judul: (w.kode ? w.kode + ' · ' : '') + w.label })),
+        (i) => centerOn(i, true));
+
     function updatePhysics() {
         const scroll = scroller.scrollTop;
         const centerY = scroller.offsetHeight / 2;
@@ -100,6 +104,7 @@ function renderKisiKisi() {
         });
         if (closest) {
             closest.el.classList.add('active-center');
+            tandaiTitik(itemData.indexOf(closest));
             if (closest.key !== state.activeKey) {
                 state.activeKey = closest.key;
                 showKisiDetail(state);

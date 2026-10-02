@@ -275,63 +275,63 @@ function renderTentang() {
     document.body.className = 'theme-dark';
 
     const d = tentangData, p = d.pengembang;
-    const ikonMateri = ['&#128218;', '&#127891;', '&#129513;', '&#127919;'];
-    const materiHTML = d.materi.map(([label, isi], i) =>
-        `<div class="tt-item"><i>${ikonMateri[i] || ''}</i><span>${label}</span><b>${isi}</b></div>`).join('');
+    const materiHTML = d.materi.map(([label, isi]) =>
+        `<div class="ttg-baris"><span>${label}</span><b>${isi}</b></div>`).join('');
     const aiHTML = d.ai.map(([bagian, alat]) =>
-        `<div class="tt-ai-baris"><span>${bagian}</span><div>${alat.map(x => `<em>${x}</em>`).join('')}</div></div>`).join('');
+        `<div class="ttg-baris"><span>${bagian}</span><b>${alat.join(', ')}</b></div>`).join('');
 
-    // Tata letak "bento": lima ubin dengan ukuran berbeda, masing-masing satu topik
-    elements.contentArea.innerHTML = `
-        <div class="tt-container">
-            <div class="tt-kepala">
-                <button id="btn-back-menu" class="glass-btn kisi-back-btn">&#8592; Menu Utama</button>
-                <h2 class="sim-judul">Tentang</h2>
+    // Kartu-kartu yang digulir seperti menu roda: [judul pendek, isi]
+    const kartu = [
+        ['Aplikasi', `
+            <div class="ttg-aplikasi">
+                <img src="assets/icon/icon-192.png" alt="Logo MPI BK">
+                <div>
+                    <span class="ttg-label">Media Pembelajaran Interaktif</span>
+                    <h3>Berpikir <em>Komputasional</em></h3>
+                </div>
             </div>
-            <div class="tt-grid">
-                <section class="tt-ubin tt-hero">
-                    <div class="tt-hero-bg" id="tt-hero-bg"></div>
-                    <div class="tt-hero-isi">
-                        <img src="assets/icon/icon-192.png" alt="Logo MPI BK">
-                        <span class="tt-label">Media Pembelajaran Interaktif</span>
-                        <h3>Berpikir<br><em>Komputasional</em></h3>
-                        <p>Belajar lewat cerita Kevin dan Kayana, cek kisi-kisi, lalu uji diri di simulasi ASTS.</p>
-                        <span class="kisi-chip" id="tentang-versi">Versi 1.0</span>
+            <p>Belajar lewat cerita Kevin dan Kayana, cek kisi-kisi, lalu uji diri di simulasi ASTS.</p>
+            <span class="kisi-chip" id="tentang-versi">Versi 1.0</span>`],
+        ['Identitas Materi', `<span class="ttg-label">Identitas Materi</span>${materiHTML}`],
+        ['Tujuan Pembelajaran', `<span class="ttg-label">Tujuan Pembelajaran</span><p class="ttg-tujuan">${d.tujuan}</p>`],
+        ['Pengembang', `
+            <span class="ttg-label">Pengembang</span>
+            <div class="ttg-dev">
+                <img class="tentang-foto" src="${p.foto}" alt="Foto ${p.nama}">
+                <div>
+                    <h3>${p.nama}</h3>
+                    <span>Guru ${p.mapel}</span>
+                    <span>${p.sekolah}</span>
+                    <a href="mailto:${p.email}">${p.email}</a>
+                </div>
+            </div>`],
+        ['Dibuat dengan Bantuan AI', `<span class="ttg-label">Dibuat dengan Bantuan AI</span>${aiHTML}<p class="ttg-catatan">${d.aiPeran}</p>`]
+    ];
+
+    // Latar: gambar sampul. Kartu berada di kiri dan digulir naik-turun seperti daftar menu;
+    // kartu yang di tengah menonjol, kartu lain mengintip redup di atas dan bawahnya.
+    elements.contentArea.innerHTML = `
+        <div class="ttg-container">
+            <div class="ttg-latar" id="ttg-latar"></div>
+            <div class="ttg-panel">
+                <div class="kisi-list-header ttg-kepala">
+                    <button id="btn-back-menu" class="glass-btn kisi-back-btn">&#8592; Menu Utama</button>
+                    <h2>Tentang</h2>
+                </div>
+                <div id="ttg-roda" class="ttg-roda">
+                    <div class="ttg-blok">
+                        ${kartu.map(([judul, isi], i) => `<section class="ttg-kartu" data-idx="${i}" aria-label="${judul}">${isi}</section>`).join('')}
                     </div>
-                </section>
-                <section class="tt-ubin tt-materi">
-                    <h4 class="tt-judul">Identitas Materi</h4>
-                    <div class="tt-materi-grid">${materiHTML}</div>
-                </section>
-                <section class="tt-ubin tt-tujuan">
-                    <span class="tt-kutip">&ldquo;</span>
-                    <h4 class="tt-judul">Tujuan Pembelajaran</h4>
-                    <p>${d.tujuan}</p>
-                </section>
-                <section class="tt-ubin tt-ai">
-                    <h4 class="tt-judul">&#10024; Dibuat dengan bantuan AI</h4>
-                    ${aiHTML}
-                    <p>${d.aiPeran}</p>
-                </section>
-                <section class="tt-ubin tt-dev">
-                    <img class="tentang-foto" src="${p.foto}" alt="Foto ${p.nama}">
-                    <div class="tt-dev-isi">
-                        <h4 class="tt-judul">Pengembang</h4>
-                        <h3>${p.nama}</h3>
-                        <div class="tt-dev-chip">
-                            <span>&#127979; ${p.sekolah}</span>
-                            <span>&#128187; Guru ${p.mapel}</span>
-                        </div>
-                        <a class="tt-email" href="mailto:${p.email}">&#9993; ${p.email}</a>
-                    </div>
-                </section>
+                </div>
             </div>
         </div>`;
-    cariAset('cover', (src) => { const bg = document.getElementById('tt-hero-bg'); if (bg) bg.style.backgroundImage = `url('${src}')`; });
+    cariAset('cover', (src) => { const bg = document.getElementById('ttg-latar'); if (bg) bg.style.backgroundImage = `url('${src}')`; });
 
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });
     });
+
+    pasangRodaKartu(document.getElementById('ttg-roda'), document.querySelector('.ttg-panel'), kartu.map(k => k[0]));
 
     // Pintu masuk mode developer: ketuk tulisan versi 7 kali berturut-turut
     let ketuk = 0, timerKetuk = null;

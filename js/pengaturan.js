@@ -1,5 +1,7 @@
 // =====================================================================
 // HALAMAN PENGATURAN
+// Tampilan: bento empat ubin (Musik Latar, Progresmu, Profil Siswa,
+// Mulai dari Awal) dengan gaya kartu yang sama seperti halaman Tentang.
 // - Profil siswa (nama panggilan & gender) : segera hadir.
 // - Reset ke keadaan awal: menghapus semua data aplikasi yang tersimpan
 //   di perangkat ini (progres belajar, centang kisi-kisi, hasil simulasi,
@@ -45,20 +47,22 @@ function renderPengaturan() {
     const pK = r.k.total ? r.k.done / r.k.total * 100 : 0;
     const nilai = r.terbaik === null ? null : Math.round(r.terbaik);
 
-    // Tata letak "bento", sama dengan halaman Tentang
+    // Tata letak bento (empat ubin), dengan gaya yang sama seperti halaman Tentang:
+    // gambar sampul sebagai latar, ubin kaca biru tua, dan satu warna aksen (ungu = warna tombol Pengaturan).
     elements.contentArea.innerHTML = `
-        <div class="tt-container">
-            <div class="tt-kepala">
+        <div class="ttg-container atur">
+            <div class="ttg-latar atb-latar" id="ttg-latar"></div>
+            <div class="kisi-list-header ttg-kepala">
                 <button id="btn-back-menu" class="glass-btn kisi-back-btn">&#8592; Menu Utama</button>
-                <h2 class="sim-judul">Pengaturan</h2>
+                <h2>Pengaturan</h2>
             </div>
-            <div class="tt-grid at-grid">
-                <section class="tt-ubin at-musik">
+            <div class="atb-grid">
+                <section class="ttg-kartu atb-ubin atb-musik">
                     ${typeof musikKartuHTML === 'function' ? musikKartuHTML() : ''}
                 </section>
 
-                <section class="tt-ubin at-progres">
-                    <h4 class="tt-judul">Progresmu</h4>
+                <section class="ttg-kartu atb-ubin atb-progres">
+                    <span class="ttg-label">Progresmu</span>
                     <div class="at-progres-baris">
                         <div class="at-stat">${cincin(pB, '#3498db', Math.round(pB) + '%')}<div><b>Mulai Belajar</b><span>${r.b.done} dari ${r.b.total} bab selesai</span></div></div>
                         <div class="at-stat">${cincin(pK, '#e67e22', Math.round(pK) + '%')}<div><b>Cek Kisi-Kisi</b><span>${r.k.done} dari ${r.k.total} kompetensi</span></div></div>
@@ -67,26 +71,27 @@ function renderPengaturan() {
                 </section>
 
                 ${modeDev() ? `
-                <section class="tt-ubin at-dev">
-                    <div class="at-kepala"><h4 class="tt-judul">&#128736; Mode Developer</h4><span class="at-lencana hijau">Aktif</span></div>
+                <section class="ttg-kartu atb-ubin">
+                    <div class="at-kepala"><span class="ttg-label">Mode Developer</span><span class="at-lencana hijau">Aktif</span></div>
                     <p class="at-ket">Semua menu dan bab terbuka, dan navigasi bab selalu tampil. Progres asli tidak diubah.</p>
                     <label class="atur-centang"><input type="checkbox" id="dev-lewati" ${devLewatiPembuka() ? 'checked' : ''}> Lewati layar pemuatan dan sampul</label>
                     <button id="dev-matikan" class="at-tombol hijau">Matikan mode developer</button>
                 </section>` : `
-                <section class="tt-ubin at-profil">
-                    <div class="at-kepala"><h4 class="tt-judul">&#128100; Profil Siswa</h4><span class="at-lencana">Segera hadir</span></div>
-                    <div class="at-profil-baris"><i>&#128172;</i><div><b>Nama Panggilan</b><span>Kevin dan Kayana akan memanggilmu dengan nama ini.</span></div></div>
-                    <div class="at-profil-baris"><i>&#127917;</i><div><b>Pemandu</b><span>Pilih siapa yang memandumu: Kevin atau Kayana.</span></div></div>
+                <section class="ttg-kartu atb-ubin">
+                    <div class="at-kepala"><span class="ttg-label">Profil Siswa</span><span class="at-lencana">Segera hadir</span></div>
+                    <div class="at-profil-baris"><b>Nama Panggilan</b><span>Kevin dan Kayana akan memanggilmu dengan nama ini.</span></div>
+                    <div class="at-profil-baris"><b>Pemandu</b><span>Pilih siapa yang memandumu: Kevin atau Kayana.</span></div>
                 </section>`}
 
-                <section class="tt-ubin at-reset">
-                    <h4 class="tt-judul">&#8634; Mulai dari Awal</h4>
+                <section class="ttg-kartu atb-ubin">
+                    <span class="ttg-label">Mulai dari Awal</span>
                     <p class="at-ket">Menghapus semua data belajarmu di perangkat ini. Aplikasi kembali seperti pertama kali dibuka.</p>
-                    <span class="at-catatan">${kosong ? 'Belum ada data belajar yang tersimpan.' : '&#9888; Data yang dihapus tidak bisa dikembalikan.'}</span>
+                    <span class="at-catatan">${kosong ? 'Belum ada data belajar yang tersimpan.' : 'Data yang dihapus tidak bisa dikembalikan.'}</span>
                     <button id="atur-reset" class="at-tombol merah">Reset Semua Data</button>
                 </section>
             </div>
         </div>`;
+    cariAset('cover', (src) => { const bg = document.getElementById('ttg-latar'); if (bg) bg.style.backgroundImage = `url('${src}')`; });
 
     document.getElementById('btn-back-menu').addEventListener('click', () => {
         navigateWithTransition(() => { appState.currentView = 'menu'; renderView(); });
