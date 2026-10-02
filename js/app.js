@@ -126,7 +126,7 @@ function pemuatanDaftarGambar() {
     const sudah = {};
     [['kevin', null], ['kayana', null]].concat(dialogData
         .filter(d => d.type !== 'quiz' && d.emotion && (d.speaker === 'Kevin' || d.speaker === 'Kayana'))
-        .map(d => [d.speaker.toLowerCase(), d.emotion]))
+        .reduce((a, d) => a.concat([[d.speaker.toLowerCase(), d.emotion]], d.emotionSalah ? [[d.speaker.toLowerCase(), d.emotionSalah]] : []), []))
         .forEach(([k, e]) => {
             if (sudah[k + ':' + e]) return;
             sudah[k + ':' + e] = true;
@@ -1180,6 +1180,7 @@ function loadVNAsset(elementId, baseName, isCharacter = false) {
 }
 
 let vnCurrentIndex = 0;
+let vnKuis = null;                // hasil kuis terakhir: { index, sempatSalah }
 let vnIsTyping = false;
 let vnTypewriterTimeout;
 
@@ -1670,6 +1671,7 @@ function vnLompatKe(index) {
     const container = document.querySelector('.vn-container');
     if (container) { container.onclick = null; container.classList.remove('quiz-mode', 'chapter-transition'); }
     vnCurrentIndex = index;
+    vnKuis = null;                              // melompat lewat navigasi: baris sesudah kuis memakai versi bawaan
     // Samakan ekspresi kedua karakter dengan keadaan terakhirnya sebelum baris ini
     vnPasangEkspresi(document.getElementById('vn-char-kevin'), 'kevin', vnEkspresiTerakhir('Kevin', index));
     vnPasangEkspresi(document.getElementById('vn-char-kayana'), 'kayana', vnEkspresiTerakhir('Kayana', index));
@@ -1950,12 +1952,18 @@ function playVNDialogue() {
         optionsContainer.style.display = 'flex'; // Pastikan opsi terlihat lagi
         document.getElementById('vn-quiz-next-indicator').style.display = 'none';
 
+        // Murid boleh mencoba lagi sampai benar. Hasilnya diingat untuk memilih versi baris sesudah kuis:
+        // benar pada percobaan pertama -> versi pujian; sempat salah -> versi penjelasan (textSalah).
+        vnKuis = { index: vnCurrentIndex, sempatSalah: false };
+        optionsContainer.classList.toggle('banyak', data.options.length > 2);
         data.options.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'vn-quiz-btn';
             btn.innerText = opt.text;
             btn.onclick = () => {
-                showFeedback(opt.feedback, opt.correct);
+                if (btn.disabled) return;
+                if (!opt.correct) { vnKuis.sempatSalah = true; btn.disabled = true; btn.classList.add('salah'); }
+                showFeedback(opt.feedback, opt.correct, data.text);
             };
             optionsContainer.appendChild(btn);
         });
@@ -1963,6 +1971,11 @@ function playVNDialogue() {
     }
 
     container.classList.remove('quiz-mode');
+
+    // Baris sesudah kuis bisa punya versi "sempat salah" (lihat catatan di dialogueData.js)
+    const pakaiSalah = !!(data.textSalah && vnKuis && vnKuis.sempatSalah);
+    const teksBaris = pakaiSalah ? data.textSalah : data.text;
+    const emosiBaris = pakaiSalah ? (data.emotionSalah || data.emotion) : data.emotion;
 
     // Tampilkan Dialog Normal
     speakerEl.innerText = data.speaker;
@@ -1981,13 +1994,13 @@ function playVNDialogue() {
         speakerEl.style.display = 'block';
         
         if (data.speaker === 'Kevin') {
-            vnPasangEkspresi(charKevin, 'kevin', data.emotion);
+            vnPasangEkspresi(charKevin, 'kevin', emosiBaris);
             charKevin.classList.add('active');
             charKevin.classList.remove('inactive');
             charKayana.classList.remove('active');
             charKayana.classList.add('inactive');
         } else {
-            vnPasangEkspresi(charKayana, 'kayana', data.emotion);
+            vnPasangEkspresi(charKayana, 'kayana', emosiBaris);
             charKayana.classList.add('active');
             charKayana.classList.remove('inactive');
             charKevin.classList.remove('active');
@@ -2010,8 +2023,8 @@ function playVNDialogue() {
     let i = 0;
     
     function typeWriter() {
-        if (i < data.text.length) {
-            textEl.innerHTML += data.text.charAt(i);
+        if (i < teksBaris.length) {
+            textEl.innerHTML += teksBaris.charAt(i);
             i++;
             vnTypewriterTimeout = setTimeout(typeWriter, 25);
         } else {
@@ -2050,7 +2063,7 @@ function playVNDialogue() {
         
         if (vnIsTyping) {
             clearTimeout(vnTypewriterTimeout);
-            textEl.innerText = data.text;
+            textEl.innerText = teksBaris;
             vnIsTyping = false;
             indicator.style.display = 'block';
         } else {
@@ -2061,7 +2074,7 @@ function playVNDialogue() {
     };
 }
 
-function showFeedback(feedbackText, isCorrect) {
+function showFeedback(feedbackText, isCorrect, teksSoal) {
     const questionEl = document.getElementById('vn-quiz-question');
     const indicator = document.getElementById('vn-quiz-next-indicator');
     const optionsContainer = document.getElementById('vn-quiz-options');
@@ -2097,6 +2110,13 @@ function showFeedback(feedbackText, isCorrect) {
             questionEl.innerText = feedbackText;
             vnIsTyping = false;
             indicator.style.display = 'block';
+        } else if (!isCorrect) {
+            // Jawaban salah: kembali ke soal, pilihan yang tadi dipilih sudah dinonaktifkan
+            container.onclick = null;
+            questionEl.style.color = '#1a1b2e';
+            questionEl.innerText = teksSoal || '';
+            indicator.style.display = 'none';
+            optionsContainer.style.display = 'flex';
         } else {
             container.onclick = null;
             questionEl.style.color = '#1a1b2e'; // Kembalikan ke warna awal

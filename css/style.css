@@ -3223,3 +3223,18 @@ html:not(.app-siap) #app-container { opacity: 0; }
 .atur-dev-btn { color: #58d68d; background: rgba(46, 204, 113, 0.12); border-color: rgba(46, 204, 113, 0.6); }
 .atur-dev-btn:hover { background: rgba(46, 204, 113, 0.25); }
 #tentang-versi { cursor: default; user-select: none; }
+
+
+/* =========================================
+   KUIS DIALOG: coba lagi saat salah, dan kuis evaluasi dengan empat pilihan
+========================================= */
+.vn-quiz-btn.salah, .vn-quiz-btn:disabled {
+    opacity: 0.45;
+    text-decoration: line-through;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+}
+.vn-quiz-btn:disabled:hover { transform: none; }
+/* Empat pilihan: dua kolom agar tetap muat di bawah gelembung soal */
+.vn-quiz-options.banyak { flex-direction: row; flex-wrap: wrap; }
+.vn-quiz-options.banyak .vn-quiz-btn { flex: 1 1 calc(50% - 10px); min-width: 0; }

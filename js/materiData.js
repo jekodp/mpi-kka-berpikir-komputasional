@@ -112,7 +112,7 @@ const materiBab = {
                 ]]
             ] },
             { judul: 'Penerapan', isi: [
-                ['cerita', 'Kevin mengingat kebiasaan adiknya: setiap Minggu pukul 15.00 adiknya bersepeda ke taman dan baru pulang pukul 16.00. Dari pola itu, ia tahu ada waktu satu jam untuk menghias rumah.'],
+                ['cerita', 'Kevin mengingat kebiasaan adiknya: setiap sore pukul 15.00 adiknya bersepeda ke taman dan baru pulang pukul 16.00. Dari pola itu, ia tahu ada waktu satu jam untuk menghias rumah.'],
                 ['contoh', 'Data pengunjung perpustakaan menunjukkan bahwa perpustakaan selalu ramai pada jam istirahat kedua. Petugas dapat memperkirakan kapan harus menyiapkan meja tambahan.'],
                 ['ingat', 'Satu kejadian belum dapat disebut pola. Pola baru dapat dipercaya jika muncul berulang kali dan tetap cocok saat diuji dengan data baru.']
             ] }
@@ -179,7 +179,7 @@ const materiBab = {
                 ['p', 'Dalam penyelesaian masalah yang sesungguhnya, keempat pilar dipakai bersama. Rencana pesta kejutan Kevin memperlihatkan peran tiap pilar.'],
                 ['ul', [
                     '<b>Dekomposisi</b>: pesta dipecah menjadi tiga tugas (kue dan kado, dekorasi, mengalihkan perhatian adik).',
-                    '<b>Pengenalan pola</b>: kebiasaan adik bersepeda setiap Minggu sore dipakai untuk menentukan waktu dekorasi.',
+                    '<b>Pengenalan pola</b>: kebiasaan adik bersepeda setiap sore dipakai untuk menentukan waktu dekorasi.',
                     '<b>Abstraksi</b>: denah disederhanakan menjadi letak meja kue dan pintu masuk saja.',
                     '<b>Algoritma</b>: semua kegiatan disusun berurutan menurut jamnya.'
                 ]]
